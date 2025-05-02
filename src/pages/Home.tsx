@@ -1,9 +1,8 @@
-
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { CheckIcon, CreditCard, SendIcon, ReceiveIcon, LockIcon } from "lucide-react";
+import { CheckIcon, CreditCard, SendIcon, DownloadIcon, LockIcon } from "lucide-react";
 
 const Home = () => {
   const features = [
@@ -13,7 +12,7 @@ const Home = () => {
       description: "Send money to anyone, anywhere with just a few clicks."
     },
     {
-      icon: <ReceiveIcon className="h-10 w-10 text-bank-primary" />,
+      icon: <DownloadIcon className="h-10 w-10 text-bank-primary" />,
       title: "Instant Deposits",
       description: "Receive funds instantly from other Baadshah Bank accounts."
     },
