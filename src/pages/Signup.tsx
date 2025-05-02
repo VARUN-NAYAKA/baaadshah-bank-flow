@@ -13,12 +13,12 @@ const Signup = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
     fullName: "",
-    email: "",
     phone: "",
     age: "",
     password: "",
     confirmPassword: "",
-    address: ""
+    address: "",
+    username: "" // Added username as the unique identifier instead of email
   });
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -31,28 +31,12 @@ const Signup = () => {
     });
   };
 
-  const validateEmail = (email: string) => {
-    // Basic email validation pattern
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailPattern.test(email);
-  };
-
   const validateStep1 = () => {
-    if (!formData.fullName || !formData.email || !formData.phone || !formData.age) {
+    if (!formData.fullName || !formData.username || !formData.phone || !formData.age) {
       toast({
         variant: "destructive",
         title: "Missing information",
         description: "Please fill in all required fields."
-      });
-      return false;
-    }
-    
-    // Validate email format
-    if (!validateEmail(formData.email)) {
-      toast({
-        variant: "destructive",
-        title: "Invalid email",
-        description: "Please enter a valid email address."
       });
       return false;
     }
@@ -118,21 +102,25 @@ const Signup = () => {
     setIsLoading(true);
     
     try {
-      // Make sure email is properly trimmed and lowercase
-      const email = formData.email.trim().toLowerCase();
+      // Make sure username is properly trimmed and lowercase
+      const username = formData.username.trim().toLowerCase();
       
-      // Sign up the user with Supabase
+      // Sign up the user with Supabase using username as the email
+      // We'll use username@example.com format to satisfy Supabase email requirement
+      // but we won't be actually using this email for verification
+      const fakeEmail = `${username}@baadshah-bank.example`;
+      
       const { data, error } = await supabase.auth.signUp({
-        email: email,
+        email: fakeEmail,
         password: formData.password,
         options: {
           data: {
             full_name: formData.fullName,
             phone: formData.phone,
             age: parseInt(formData.age),
-            address: formData.address
-          },
-          emailRedirectTo: window.location.origin + '/login'
+            address: formData.address,
+            username: username // Store the actual username in metadata
+          }
         }
       });
       
@@ -152,11 +140,12 @@ const Signup = () => {
       
       if (accountError) {
         console.error("Error creating account:", accountError);
+        throw new Error("Failed to create bank account");
       }
       
       toast({
         title: "Account Created Successfully!",
-        description: `Your account number is ${accountNumber}. Please save this for future reference.`
+        description: `Welcome to Baadshah Bank, ${formData.fullName}! Your account number is ${accountNumber}. Please save this for future reference.`
       });
       
       // Navigate to login after a brief delay
@@ -222,13 +211,12 @@ const Signup = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email Address</Label>
+                    <Label htmlFor="username">Username</Label>
                     <Input
-                      id="email"
-                      name="email"
-                      type="email"
-                      placeholder="Enter your email address"
-                      value={formData.email}
+                      id="username"
+                      name="username"
+                      placeholder="Choose a username"
+                      value={formData.username}
                       onChange={updateFormData}
                       required
                       className="input-field"
