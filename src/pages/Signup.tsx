@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
+import { supabase } from "@/integrations/supabase/client";
 
 const Signup = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -93,16 +94,31 @@ const Signup = () => {
     setCurrentStep(1);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!validateStep2()) return;
     
     setIsLoading(true);
     
-    // Simulate API call for creating an account
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      // Sign up the user with Supabase
+      const { data, error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            full_name: formData.fullName,
+            phone: formData.phone,
+            age: parseInt(formData.age),
+            address: formData.address
+          }
+        }
+      });
+      
+      if (error) {
+        throw error;
+      }
       
       // Generate a random 15-digit account number
       const accountNumber = Array.from({ length: 15 }, () => Math.floor(Math.random() * 10)).join('');
@@ -116,7 +132,16 @@ const Signup = () => {
       setTimeout(() => {
         navigate("/login");
       }, 3000);
-    }, 2000);
+      
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error creating account",
+        description: error.message || "An unexpected error occurred"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

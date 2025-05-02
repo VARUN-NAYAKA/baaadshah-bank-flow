@@ -52,11 +52,6 @@ const Home = () => {
                       Get Started
                     </Button>
                   </Link>
-                  <Link to="/services">
-                    <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-bank-primary font-semibold text-lg">
-                      Learn More
-                    </Button>
-                  </Link>
                 </div>
               </motion.div>
             </div>
