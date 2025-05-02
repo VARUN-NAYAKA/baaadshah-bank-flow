@@ -31,12 +31,28 @@ const Signup = () => {
     });
   };
 
+  const validateEmail = (email: string) => {
+    // Basic email validation pattern
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailPattern.test(email);
+  };
+
   const validateStep1 = () => {
     if (!formData.fullName || !formData.email || !formData.phone || !formData.age) {
       toast({
         variant: "destructive",
         title: "Missing information",
         description: "Please fill in all required fields."
+      });
+      return false;
+    }
+    
+    // Validate email format
+    if (!validateEmail(formData.email)) {
+      toast({
+        variant: "destructive",
+        title: "Invalid email",
+        description: "Please enter a valid email address."
       });
       return false;
     }
@@ -102,9 +118,12 @@ const Signup = () => {
     setIsLoading(true);
     
     try {
+      // Make sure email is properly trimmed and lowercase
+      const email = formData.email.trim().toLowerCase();
+      
       // Sign up the user with Supabase
       const { data, error } = await supabase.auth.signUp({
-        email: formData.email,
+        email: email,
         password: formData.password,
         options: {
           data: {
@@ -112,7 +131,8 @@ const Signup = () => {
             phone: formData.phone,
             age: parseInt(formData.age),
             address: formData.address
-          }
+          },
+          emailRedirectTo: window.location.origin + '/login'
         }
       });
       
@@ -122,6 +142,17 @@ const Signup = () => {
       
       // Generate a random 15-digit account number
       const accountNumber = Array.from({ length: 15 }, () => Math.floor(Math.random() * 10)).join('');
+      
+      // Create account in accounts table
+      const { error: accountError } = await supabase
+        .from('accounts')
+        .insert([
+          { user_id: data.user?.id, account_number: accountNumber, balance: 1000 }
+        ]);
+      
+      if (accountError) {
+        console.error("Error creating account:", accountError);
+      }
       
       toast({
         title: "Account Created Successfully!",
