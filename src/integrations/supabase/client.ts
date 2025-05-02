@@ -14,15 +14,14 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
 // Simple function to check if the connection is working
 export const checkSupabaseConnection = async () => {
   try {
-    const { data, error } = await supabase.from('_dummy_query').select('*').limit(1);
+    // Instead of querying a non-existent table, we'll use the health check endpoint
+    const { error } = await supabase.auth.getSession();
     
-    if (error && error.message !== 'relation "_dummy_query" does not exist') {
+    if (error) {
       console.error('Supabase connection error:', error);
       return false;
     }
     
-    // If we get a specific error about the relation not existing,
-    // that actually means our connection is working!
     return true;
   } catch (error) {
     console.error('Supabase connection error:', error);
