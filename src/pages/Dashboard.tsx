@@ -9,66 +9,164 @@ import DashboardNav from "@/components/DashboardNav";
 import TransactionList from "@/components/TransactionList";
 import TransferMoney from "@/components/TransferMoney";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
+import { 
+  getCurrentUser, 
+  getCurrentAccount,
+  addMoney,
+  withdrawMoney,
+  getUserTransactions
+} from "@/services/supabaseAuth";
 
 interface Transaction {
   id: string;
   date: string;
   description: string;
   amount: number;
-  type: "credit" | "debit";
+  type: "credit" | "debit" | "transfer";
+  sender?: {
+    full_name: string;
+    phone: string;
+  };
+  receiver?: {
+    full_name: string;
+    phone: string;
+  };
 }
 
 const Dashboard = () => {
-  const [balance, setBalance] = useState(10000);
-  const [accountNumber, setAccountNumber] = useState("896523471589632");
-  const [name, setName] = useState("John Doe");
+  const [balance, setBalance] = useState(0);
+  const [accountNumber, setAccountNumber] = useState("");
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
-  // Mock transaction data
   useEffect(() => {
-    const mockTransactions = [
-      {
-        id: "tx1",
-        date: "2023-05-01",
-        description: "Salary deposit",
-        amount: 5000,
-        type: "credit" as const
-      },
-      {
-        id: "tx2",
-        date: "2023-05-02",
-        description: "Grocery shopping",
-        amount: 120.50,
-        type: "debit" as const
-      },
-      {
-        id: "tx3",
-        date: "2023-05-03",
-        description: "Transfer from Sarah",
-        amount: 250,
-        type: "credit" as const
-      },
-      {
-        id: "tx4",
-        date: "2023-05-04",
-        description: "Utility bill payment",
-        amount: 85.75,
-        type: "debit" as const
-      },
-      {
-        id: "tx5",
-        date: "2023-05-05",
-        description: "Online subscription",
-        amount: 15.99,
-        type: "debit" as const
-      }
-    ];
+    // Check if user is logged in
+    const user = getCurrentUser();
+    const account = getCurrentAccount();
     
-    setTransactions(mockTransactions);
-  }, []);
+    if (!user || !account) {
+      toast({
+        variant: "destructive",
+        title: "Not logged in",
+        description: "Please login to access your dashboard."
+      });
+      navigate("/login");
+      return;
+    }
+    
+    // Set user data
+    setName(user.full_name);
+    setPhone(user.phone);
+    setBalance(account.balance);
+    setAccountNumber(account.account_number);
+    
+    // Load transactions
+    loadTransactions();
+  }, [navigate, toast]);
 
-  const handleTransfer = (recipientAccount: string, amount: number, description: string) => {
+  const loadTransactions = async () => {
+    setIsLoading(true);
+    try {
+      const userTransactions = await getUserTransactions();
+      
+      // Format transactions for display
+      const formattedTransactions: Transaction[] = userTransactions.map((tx: any) => {
+        const user = getCurrentUser();
+        let type: "credit" | "debit" | "transfer" = tx.transaction_type;
+        
+        return {
+          id: tx.id,
+          date: tx.created_at,
+          description: tx.description,
+          amount: tx.amount,
+          type,
+          sender: tx.sender,
+          receiver: tx.receiver
+        };
+      });
+      
+      setTransactions(formattedTransactions);
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to load transactions."
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAddMoney = async () => {
+    const amount = prompt("Enter amount to add:");
+    if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
+      toast({
+        variant: "destructive",
+        title: "Invalid amount",
+        description: "Please enter a valid amount greater than 0."
+      });
+      return;
+    }
+    
+    try {
+      const { account } = await addMoney(Number(amount), "Deposit to account");
+      
+      setBalance(account.balance);
+      
+      toast({
+        title: "Deposit successful",
+        description: `₹${Number(amount).toFixed(2)} has been added to your account.`
+      });
+      
+      // Refresh transactions
+      loadTransactions();
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to add money."
+      });
+    }
+  };
+
+  const handleWithdraw = async () => {
+    const amount = prompt("Enter amount to withdraw:");
+    if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
+      toast({
+        variant: "destructive",
+        title: "Invalid amount",
+        description: "Please enter a valid amount greater than 0."
+      });
+      return;
+    }
+    
+    try {
+      const { account } = await withdrawMoney(Number(amount), "Withdrawal from account");
+      
+      setBalance(account.balance);
+      
+      toast({
+        title: "Withdrawal successful",
+        description: `₹${Number(amount).toFixed(2)} has been withdrawn from your account.`
+      });
+      
+      // Refresh transactions
+      loadTransactions();
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to withdraw money."
+      });
+    }
+  };
+
+  const handleTransfer = async (recipientPhone: string, amount: number, description: string) => {
     if (amount > balance) {
       toast({
         variant: "destructive",
@@ -78,26 +176,33 @@ const Dashboard = () => {
       return false;
     }
     
-    // Update balance
-    setBalance(prevBalance => prevBalance - amount);
-    
-    // Add to transactions
-    const newTransaction: Transaction = {
-      id: `tx${Date.now()}`,
-      date: new Date().toISOString().split('T')[0],
-      description: `Transfer to ${recipientAccount} - ${description}`,
-      amount: amount,
-      type: "debit"
-    };
-    
-    setTransactions(prev => [newTransaction, ...prev]);
-    
-    toast({
-      title: "Transfer successful",
-      description: `$${amount.toFixed(2)} has been sent to account ending in ${recipientAccount.slice(-4)}.`
-    });
-    
-    return true;
+    try {
+      // Transfer money using Supabase
+      await transferMoney(recipientPhone, amount, description);
+      
+      // Update balance from account
+      const account = getCurrentAccount();
+      if (account) {
+        setBalance(account.balance);
+      }
+      
+      toast({
+        title: "Transfer successful",
+        description: `₹${amount.toFixed(2)} has been sent to ${recipientPhone}.`
+      });
+      
+      // Refresh transactions
+      loadTransactions();
+      
+      return true;
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Transfer failed",
+        description: error.message || "An unexpected error occurred"
+      });
+      return false;
+    }
   };
 
   return (
@@ -121,12 +226,19 @@ const Dashboard = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-4xl font-bold mb-4">${balance.toFixed(2)}</div>
+                <div className="text-4xl font-bold mb-4">₹{balance.toFixed(2)}</div>
                 <div className="flex space-x-3">
-                  <Button variant="outline" className="text-xs border-white text-white hover:bg-white hover:text-bank-primary">
+                  <Button 
+                    variant="outline" 
+                    className="text-xs border-white text-white hover:bg-white hover:text-bank-primary"
+                    onClick={handleAddMoney}
+                  >
                     Add Money
                   </Button>
-                  <Button className="text-xs bg-bank-accent text-bank-dark hover:bg-opacity-90">
+                  <Button 
+                    className="text-xs bg-bank-accent text-bank-dark hover:bg-opacity-90"
+                    onClick={handleWithdraw}
+                  >
                     Withdraw
                   </Button>
                 </div>
@@ -163,7 +275,7 @@ const Dashboard = () => {
                   <CardDescription>View your recent account activity</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <TransactionList transactions={transactions} />
+                  <TransactionList transactions={transactions} isLoading={isLoading} />
                 </CardContent>
               </Card>
             </TabsContent>
@@ -201,29 +313,10 @@ const Dashboard = () => {
                           <dd>{accountNumber.replace(/(\d{4})(\d{4})(\d{4})(\d{3})/, '$1 $2 $3 $4')}</dd>
                         </div>
                         <div className="flex justify-between">
-                          <dt className="text-gray-500">Email</dt>
-                          <dd>johndoe@example.com</dd>
-                        </div>
-                        <div className="flex justify-between">
                           <dt className="text-gray-500">Phone</dt>
-                          <dd>+1 (555) 123-4567</dd>
+                          <dd>{phone}</dd>
                         </div>
                       </dl>
-                    </div>
-                    
-                    <div>
-                      <h3 className="font-medium">Security Settings</h3>
-                      <Separator className="my-2" />
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <span>Change Password</span>
-                          <Button variant="outline" size="sm">Update</Button>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span>Two-Factor Authentication</span>
-                          <Button variant="outline" size="sm" className="bg-green-50 text-green-600 border-green-200">Enabled</Button>
-                        </div>
-                      </div>
                     </div>
                   </div>
                 </CardContent>

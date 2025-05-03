@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
-import { login } from "@/services/localAuth";
+import { loginUser } from "@/services/supabaseAuth";
 
 const Login = () => {
   const [phone, setPhone] = useState("");
@@ -21,15 +21,12 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      // Login with our local auth service
-      const user = login({
-        phone: phone,
-        password: password,
-      });
+      // Login with Supabase
+      await loginUser(phone, password);
       
       toast({
         title: "Login successful",
-        description: `Welcome back, ${user.fullName}!`,
+        description: "Welcome back to Baadshah Bank!",
       });
       
       // Navigate to dashboard

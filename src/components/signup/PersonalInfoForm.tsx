@@ -1,9 +1,11 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
+import { checkPhoneExists } from "@/services/supabaseAuth";
+import { useToast } from "@/hooks/use-toast";
 
 interface PersonalInfoFormProps {
   formData: {
@@ -17,6 +19,56 @@ interface PersonalInfoFormProps {
 }
 
 const PersonalInfoForm = ({ formData, updateFormData, handleNextStep }: PersonalInfoFormProps) => {
+  const [isChecking, setIsChecking] = useState(false);
+  const { toast } = useToast();
+
+  const handleNext = async () => {
+    // Validate form data
+    if (!formData.fullName || !formData.username || !formData.phone || !formData.age) {
+      toast({
+        variant: "destructive",
+        title: "Missing information",
+        description: "Please fill in all required fields."
+      });
+      return;
+    }
+    
+    if (parseInt(formData.age) < 18) {
+      toast({
+        variant: "destructive",
+        title: "Age restriction",
+        description: "You must be at least 18 years old to create an account."
+      });
+      return;
+    }
+    
+    // Check if phone number already exists
+    setIsChecking(true);
+    try {
+      const exists = await checkPhoneExists(formData.phone);
+      if (exists) {
+        toast({
+          variant: "destructive",
+          title: "Phone number already registered",
+          description: "This phone number is already associated with an account."
+        });
+        setIsChecking(false);
+        return;
+      }
+      
+      // All validations passed, proceed to next step
+      handleNextStep();
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "An error occurred while checking the phone number."
+      });
+    } finally {
+      setIsChecking(false);
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -83,10 +135,11 @@ const PersonalInfoForm = ({ formData, updateFormData, handleNextStep }: Personal
       
       <Button
         type="button"
-        onClick={handleNextStep}
+        onClick={handleNext}
         className="w-full bg-bank-primary hover:bg-bank-secondary text-white"
+        disabled={isChecking}
       >
-        Next
+        {isChecking ? "Checking..." : "Next"}
       </Button>
     </motion.div>
   );

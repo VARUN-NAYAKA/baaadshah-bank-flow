@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import PersonalInfoForm from "@/components/signup/PersonalInfoForm";
 import SecurityInfoForm from "@/components/signup/SecurityInfoForm";
-import { createUser } from "@/services/localAuth";
+import { registerUser } from "@/services/supabaseAuth";
 
 const Signup = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -43,24 +43,7 @@ const Signup = () => {
   };
 
   const validateStep1 = () => {
-    if (!formData.fullName || !formData.username || !formData.phone || !formData.age) {
-      toast({
-        variant: "destructive",
-        title: "Missing information",
-        description: "Please fill in all required fields."
-      });
-      return false;
-    }
-    
-    if (parseInt(formData.age) < 18) {
-      toast({
-        variant: "destructive",
-        title: "Age restriction",
-        description: "You must be at least 18 years old to create an account."
-      });
-      return false;
-    }
-    
+    // Validation handled in PersonalInfoForm component
     return true;
   };
 
@@ -113,21 +96,19 @@ const Signup = () => {
     setIsLoading(true);
     
     try {
-      // Create account with our local auth service
-      const user = createUser({
-        fullName: formData.fullName,
+      // Register user in Supabase
+      await registerUser({
+        full_name: formData.fullName,
         username: formData.username,
         phone: formData.phone,
         age: parseInt(formData.age),
         address: formData.address,
-        password: formData.password
+        pin: formData.password
       });
-      
-      const accountNumber = user.id;
       
       toast({
         title: "Account Created Successfully!",
-        description: `Welcome to Baadshah Bank, ${formData.fullName}! Your account number is ${accountNumber}. Please save this for future reference.`
+        description: `Welcome to Baadshah Bank, ${formData.fullName}! Your account has been created successfully.`
       });
       
       // Navigate to login after a brief delay

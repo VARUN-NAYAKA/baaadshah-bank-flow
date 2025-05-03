@@ -8,11 +8,11 @@ import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 
 interface TransferMoneyProps {
-  onTransfer: (recipientAccount: string, amount: number, description: string) => boolean;
+  onTransfer: (recipientPhone: string, amount: number, description: string) => Promise<boolean>;
 }
 
 const TransferMoney = ({ onTransfer }: TransferMoneyProps) => {
-  const [recipientAccount, setRecipientAccount] = useState("");
+  const [recipientPhone, setRecipientPhone] = useState("");
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -28,31 +28,14 @@ const TransferMoney = ({ onTransfer }: TransferMoneyProps) => {
     }
   };
 
-  const handleAccountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    // Allow only numbers
-    if (/^\d*$/.test(value) || value === "") {
-      setRecipientAccount(value);
-    }
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!recipientAccount || !amount || !description) {
+    if (!recipientPhone || !amount || !description) {
       toast({
         variant: "destructive",
         title: "Missing information",
         description: "Please fill in all required fields."
-      });
-      return;
-    }
-    
-    if (recipientAccount.length !== 15) {
-      toast({
-        variant: "destructive",
-        title: "Invalid account number",
-        description: "Please enter a valid 15-digit account number."
       });
       return;
     }
@@ -76,7 +59,7 @@ const TransferMoney = ({ onTransfer }: TransferMoneyProps) => {
     });
   };
 
-  const handleVerifyAndTransfer = (e: React.FormEvent) => {
+  const handleVerifyAndTransfer = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (otp.length !== 6) {
@@ -90,22 +73,23 @@ const TransferMoney = ({ onTransfer }: TransferMoneyProps) => {
     
     setIsLoading(true);
     
-    // Simulate verification
-    setTimeout(() => {
+    try {
       // Perform the transfer
-      const success = onTransfer(recipientAccount, parseFloat(amount), description);
-      
-      setIsLoading(false);
+      const success = await onTransfer(recipientPhone, parseFloat(amount), description);
       
       if (success) {
         // Reset the form
-        setRecipientAccount("");
+        setRecipientPhone("");
         setAmount("");
         setDescription("");
         setOtp("");
         setStep(1);
       }
-    }, 1500);
+    } catch (error) {
+      // Error is handled by the parent component
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -117,20 +101,20 @@ const TransferMoney = ({ onTransfer }: TransferMoneyProps) => {
       {step === 1 ? (
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="recipientAccount">Recipient Account Number</Label>
+            <Label htmlFor="recipientPhone">Recipient Phone Number</Label>
             <Input
-              id="recipientAccount"
-              placeholder="Enter 15-digit account number"
-              value={recipientAccount}
-              onChange={handleAccountChange}
+              id="recipientPhone"
+              placeholder="Enter recipient's phone number"
+              value={recipientPhone}
+              onChange={(e) => setRecipientPhone(e.target.value)}
               className="input-field"
-              maxLength={15}
               required
             />
+            <p className="text-xs text-gray-500">Enter with country code (e.g., +91XXXXXXXXXX)</p>
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="amount">Amount ($)</Label>
+            <Label htmlFor="amount">Amount (₹)</Label>
             <Input
               id="amount"
               placeholder="Enter amount"
@@ -163,12 +147,12 @@ const TransferMoney = ({ onTransfer }: TransferMoneyProps) => {
             <h3 className="font-medium mb-2">Transfer Summary</h3>
             <div className="space-y-2">
               <div className="flex justify-between">
-                <span className="text-gray-500">To Account:</span>
-                <span className="font-medium">{recipientAccount.replace(/(\d{4})(\d{4})(\d{4})(\d{3})/, '$1 $2 $3 $4')}</span>
+                <span className="text-gray-500">To Phone:</span>
+                <span className="font-medium">{recipientPhone}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">Amount:</span>
-                <span className="font-medium">${parseFloat(amount).toFixed(2)}</span>
+                <span className="font-medium">₹{parseFloat(amount).toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">Description:</span>
