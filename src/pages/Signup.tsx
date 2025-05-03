@@ -18,7 +18,7 @@ const Signup = () => {
     password: "",
     confirmPassword: "",
     address: "",
-    username: "" // Added username as the unique identifier instead of email
+    username: ""
   });
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -102,16 +102,11 @@ const Signup = () => {
     setIsLoading(true);
     
     try {
-      // Make sure username is properly trimmed and lowercase
-      const username = formData.username.trim().toLowerCase();
+      const username = formData.username.trim();
       
-      // Sign up the user with Supabase using username as the email
-      // We'll use username@example.com format to satisfy Supabase email requirement
-      // but we won't be actually using this email for verification
-      const fakeEmail = `${username}@baadshah-bank.example`;
-      
+      // Sign up the user using phone authentication instead of email
       const { data, error } = await supabase.auth.signUp({
-        email: fakeEmail,
+        phone: formData.phone,
         password: formData.password,
         options: {
           data: {
@@ -119,7 +114,7 @@ const Signup = () => {
             phone: formData.phone,
             age: parseInt(formData.age),
             address: formData.address,
-            username: username // Store the actual username in metadata
+            username: username
           }
         }
       });
@@ -234,6 +229,7 @@ const Signup = () => {
                       required
                       className="input-field"
                     />
+                    <p className="text-xs text-gray-500">Enter with country code (e.g., +91XXXXXXXXXX)</p>
                   </div>
                   
                   <div className="space-y-2">

@@ -7,9 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
+import { supabase } from "@/integrations/supabase/client";
 
 const Login = () => {
-  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [verificationCode, setVerificationCode] = useState("");
@@ -21,51 +22,61 @@ const Login = () => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      // Log in with phone and password
+      const { data, error } = await supabase.auth.signInWithPassword({
+        phone: phone,
+        password: password,
+      });
       
-      // Show 2FA code verification for demo purposes
-      // In a real app, this would check credentials first
-      if (email && password) {
-        setShowVerification(true);
-        toast({
-          title: "Verification code sent",
-          description: "Please check your email or phone for the code.",
-        });
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Login failed",
-          description: "Please enter both email and password.",
-        });
-      }
-    }, 1500);
+      if (error) throw error;
+      
+      toast({
+        title: "Login successful",
+        description: "Welcome to Baadshah Bank!",
+      });
+      
+      // Navigate to dashboard
+      navigate("/dashboard");
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Login failed",
+        description: error.message || "Please check your credentials and try again.",
+      });
+      setIsLoading(false);
+    }
   };
 
   const handleVerifyCode = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Simulate API verification
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      // Verify the OTP code
+      const { data, error } = await supabase.auth.verifyOTP({
+        phone: phone,
+        token: verificationCode,
+        type: 'sms'
+      });
       
-      // For demo, any 6-digit code works
-      if (verificationCode.length === 6) {
-        toast({
-          title: "Login successful",
-          description: "Welcome to Baadshah Bank!",
-        });
-        navigate("/dashboard");
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Verification failed",
-          description: "Please enter a valid 6-digit code.",
-        });
-      }
-    }, 1500);
+      if (error) throw error;
+      
+      toast({
+        title: "Login successful",
+        description: "Welcome to Baadshah Bank!",
+      });
+      
+      navigate("/dashboard");
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Verification failed",
+        description: error.message || "Please enter a valid verification code.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -90,16 +101,16 @@ const Login = () => {
             {!showVerification ? (
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="phone">Phone Number</Label>
                   <Input
-                    id="email"
-                    type="email"
-                    placeholder="Enter your email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    id="phone"
+                    placeholder="Enter your phone number"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
                     required
                     className="input-field"
                   />
+                  <p className="text-xs text-gray-500">Enter with country code (e.g., +91XXXXXXXXXX)</p>
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
@@ -144,7 +155,7 @@ const Login = () => {
                     maxLength={6}
                   />
                   <p className="text-sm text-gray-500 text-center mt-2">
-                    A verification code has been sent to your registered email or phone number
+                    A verification code has been sent to your registered phone number
                   </p>
                 </div>
                 <Button
