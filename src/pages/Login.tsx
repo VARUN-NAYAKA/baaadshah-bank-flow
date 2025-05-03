@@ -53,8 +53,8 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      // Verify the OTP code
-      const { data, error } = await supabase.auth.verifyOTP({
+      // Verify the OTP code - Fix the method name from verifyOTP to verifyOtp
+      const { data, error } = await supabase.auth.verifyOtp({
         phone: phone,
         token: verificationCode,
         type: 'sms'
