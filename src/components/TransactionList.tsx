@@ -22,7 +22,7 @@ interface Transaction {
 }
 
 interface TransactionListProps {
-  transactions: Transaction[];
+  transactions: Transaction[] | null;
   isLoading?: boolean;
 }
 
@@ -70,7 +70,7 @@ const TransactionList = ({ transactions, isLoading = false }: TransactionListPro
   
   return (
     <div className="overflow-x-auto">
-      {transactions.length > 0 ? (
+      {transactions && transactions.length > 0 ? (
         <Table>
           <TableHeader>
             <TableRow>

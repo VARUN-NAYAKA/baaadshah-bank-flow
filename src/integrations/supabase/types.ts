@@ -71,7 +71,69 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      check_phone_exists: {
+        Args: { phone_param: string }
+        Returns: boolean
+      }
+      create_account: {
+        Args: { account_user_id: string; account_number: string }
+        Returns: Json
+      }
+      create_transaction: {
+        Args: {
+          sender_id_param: string
+          receiver_id_param: string
+          amount_param: number
+          description_param: string
+          transaction_type_param: string
+        }
+        Returns: Json
+      }
+      create_user: {
+        Args: {
+          user_id: string
+          user_phone: string
+          user_username: string
+          user_full_name: string
+          user_age: number
+          user_address: string
+          user_pin: string
+        }
+        Returns: Json
+      }
+      get_account_by_user_id: {
+        Args: { user_id_param: string }
+        Returns: Json
+      }
+      get_user_by_id: {
+        Args: { user_id_param: string }
+        Returns: Json
+      }
+      get_user_by_phone: {
+        Args: { phone_param: string }
+        Returns: Json
+      }
+      get_user_transactions: {
+        Args: { user_id_param: string }
+        Returns: Json[]
+      }
+      transfer_money: {
+        Args: {
+          sender_id_param: string
+          receiver_phone_param: string
+          amount_param: number
+          description_param: string
+        }
+        Returns: Json
+      }
+      update_account_balance: {
+        Args: {
+          account_id_param: string
+          new_balance: number
+          update_time: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
