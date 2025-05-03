@@ -37,17 +37,19 @@ export interface Transaction {
 
 // Check if a phone number is already registered
 export const checkPhoneExists = async (phone: string) => {
-  const { data, error } = await supabase
-    .from('users')
-    .select('phone')
-    .eq('phone', phone)
-    .single();
-  
-  if (error && error.code !== 'PGRST116') { // PGRST116 is the error code for no rows found
-    throw new Error(`Error checking phone: ${error.message}`);
+  try {
+    const { data, error } = await supabase
+      .rpc('check_phone_exists', { phone_param: phone });
+    
+    if (error) {
+      throw new Error(`Error checking phone: ${error.message}`);
+    }
+    
+    return data;
+  } catch (error: any) {
+    console.error("Error checking if phone exists:", error.message);
+    return false;
   }
-  
-  return !!data;
 };
 
 // Generate a random 15-digit account number
@@ -73,20 +75,17 @@ export const registerUser = async (userData: {
   // Create a unique ID for the user
   const userId = uuidv4();
 
-  // Insert user record
+  // Insert user record using raw SQL via RPC function to avoid type issues
   const { data: userData1, error: userError } = await supabase
-    .from('users')
-    .insert({
-      id: userId,
-      phone: userData.phone,
-      username: userData.username,
-      full_name: userData.full_name,
-      age: userData.age,
-      address: userData.address,
-      pin: userData.pin
-    })
-    .select()
-    .single();
+    .rpc('create_user', {
+      user_id: userId,
+      user_phone: userData.phone,
+      user_username: userData.username,
+      user_full_name: userData.full_name,
+      user_age: userData.age,
+      user_address: userData.address,
+      user_pin: userData.pin
+    });
 
   if (userError) {
     throw new Error(`Error creating user: ${userError.message}`);
@@ -95,35 +94,36 @@ export const registerUser = async (userData: {
   // Generate account number
   const accountNumber = generateAccountNumber();
 
-  // Create account for the user
+  // Create account for the user using RPC function
   const { data: accountData, error: accountError } = await supabase
-    .from('accounts')
-    .insert({
-      user_id: userId,
-      balance: 0, // Initial balance is 0
+    .rpc('create_account', {
+      account_user_id: userId,
       account_number: accountNumber
-    })
-    .select()
-    .single();
+    });
 
   if (accountError) {
     throw new Error(`Error creating account: ${accountError.message}`);
   }
 
+  // Get the created user
+  const { data: createdUser, error: fetchError } = await supabase
+    .rpc('get_user_by_id', { user_id_param: userId });
+
+  if (fetchError || !createdUser) {
+    throw new Error(`Error fetching created user: ${fetchError?.message || 'User not found'}`);
+  }
+
   // Return user data
-  return userData1 as User;
+  return createdUser as User;
 };
 
 // Login a user
 export const loginUser = async (phone: string, pin: string) => {
   // Find user with the provided phone
   const { data: user, error: userError } = await supabase
-    .from('users')
-    .select('*')
-    .eq('phone', phone)
-    .single();
+    .rpc('get_user_by_phone', { phone_param: phone });
 
-  if (userError) {
+  if (userError || !user) {
     throw new Error('Invalid phone number or PIN');
   }
 
@@ -134,12 +134,9 @@ export const loginUser = async (phone: string, pin: string) => {
 
   // Get user account
   const { data: account, error: accountError } = await supabase
-    .from('accounts')
-    .select('*')
-    .eq('user_id', user.id)
-    .single();
+    .rpc('get_account_by_user_id', { user_id_param: user.id });
 
-  if (accountError) {
+  if (accountError || !account) {
     throw new Error('Account not found');
   }
 
@@ -199,34 +196,28 @@ export const addMoney = async (amount: number, description: string) => {
 
   // Update account balance
   const { data: updatedAccount, error: updateError } = await supabase
-    .from('accounts')
-    .update({ 
-      balance: account.balance + amount,
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', account.id)
-    .select()
-    .single();
+    .rpc('update_account_balance', { 
+      account_id_param: account.id,
+      new_balance: account.balance + amount,
+      update_time: new Date().toISOString()
+    });
 
-  if (updateError) {
-    throw new Error(`Error updating account: ${updateError.message}`);
+  if (updateError || !updatedAccount) {
+    throw new Error(`Error updating account: ${updateError?.message || 'Unknown error'}`);
   }
 
   // Create transaction record
   const { data: transaction, error: transactionError } = await supabase
-    .from('transactions')
-    .insert({
-      sender_id: user.id,
-      receiver_id: user.id,
-      amount,
-      description,
-      transaction_type: 'credit'
-    })
-    .select()
-    .single();
+    .rpc('create_transaction', {
+      sender_id_param: user.id,
+      receiver_id_param: user.id,
+      amount_param: amount,
+      description_param: description,
+      transaction_type_param: 'credit'
+    });
 
-  if (transactionError) {
-    throw new Error(`Error creating transaction: ${transactionError.message}`);
+  if (transactionError || !transaction) {
+    throw new Error(`Error creating transaction: ${transactionError?.message || 'Unknown error'}`);
   }
 
   // Update session
@@ -253,34 +244,28 @@ export const withdrawMoney = async (amount: number, description: string) => {
 
   // Update account balance
   const { data: updatedAccount, error: updateError } = await supabase
-    .from('accounts')
-    .update({ 
-      balance: account.balance - amount,
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', account.id)
-    .select()
-    .single();
+    .rpc('update_account_balance', { 
+      account_id_param: account.id,
+      new_balance: account.balance - amount,
+      update_time: new Date().toISOString()
+    });
 
-  if (updateError) {
-    throw new Error(`Error updating account: ${updateError.message}`);
+  if (updateError || !updatedAccount) {
+    throw new Error(`Error updating account: ${updateError?.message || 'Unknown error'}`);
   }
 
   // Create transaction record
   const { data: transaction, error: transactionError } = await supabase
-    .from('transactions')
-    .insert({
-      sender_id: user.id,
-      receiver_id: null,
-      amount,
-      description,
-      transaction_type: 'debit'
-    })
-    .select()
-    .single();
+    .rpc('create_transaction', {
+      sender_id_param: user.id,
+      receiver_id_param: null,
+      amount_param: amount,
+      description_param: description,
+      transaction_type_param: 'debit'
+    });
 
-  if (transactionError) {
-    throw new Error(`Error creating transaction: ${transactionError.message}`);
+  if (transactionError || !transaction) {
+    throw new Error(`Error creating transaction: ${transactionError?.message || 'Unknown error'}`);
   }
 
   // Update session
@@ -305,78 +290,32 @@ export const transferMoney = async (receiverPhone: string, amount: number, descr
     throw new Error('Insufficient balance');
   }
 
-  // Get receiver user
-  const { data: receiver, error: receiverError } = await supabase
-    .from('users')
-    .select('id')
-    .eq('phone', receiverPhone)
-    .single();
+  // Call RPC function to handle transfer
+  const { data: result, error } = await supabase
+    .rpc('transfer_money', {
+      sender_id_param: sender.id,
+      receiver_phone_param: receiverPhone,
+      amount_param: amount,
+      description_param: description
+    });
 
-  if (receiverError) {
-    throw new Error('Receiver account not found');
+  if (error || !result) {
+    throw new Error(`Transfer failed: ${error?.message || 'Unknown error'}`);
   }
 
-  // Get receiver account
-  const { data: receiverAccount, error: accountError } = await supabase
-    .from('accounts')
-    .select('id, balance')
-    .eq('user_id', receiver.id)
-    .single();
+  // Get updated sender account
+  const { data: updatedSenderAccount, error: accountError } = await supabase
+    .rpc('get_account_by_user_id', { user_id_param: sender.id });
 
-  if (accountError) {
-    throw new Error('Receiver account not found');
-  }
-
-  // Deduct from sender account
-  const { data: updatedSenderAccount, error: senderUpdateError } = await supabase
-    .from('accounts')
-    .update({ 
-      balance: senderAccount.balance - amount,
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', senderAccount.id)
-    .select()
-    .single();
-
-  if (senderUpdateError) {
-    throw new Error(`Error updating sender account: ${senderUpdateError.message}`);
-  }
-
-  // Add to receiver account
-  const { error: receiverUpdateError } = await supabase
-    .from('accounts')
-    .update({ 
-      balance: receiverAccount.balance + amount,
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', receiverAccount.id);
-
-  if (receiverUpdateError) {
-    throw new Error(`Error updating receiver account: ${receiverUpdateError.message}`);
-  }
-
-  // Create transaction record
-  const { data: transaction, error: transactionError } = await supabase
-    .from('transactions')
-    .insert({
-      sender_id: sender.id,
-      receiver_id: receiver.id,
-      amount,
-      description,
-      transaction_type: 'transfer'
-    })
-    .select()
-    .single();
-
-  if (transactionError) {
-    throw new Error(`Error creating transaction: ${transactionError.message}`);
+  if (accountError || !updatedSenderAccount) {
+    throw new Error(`Error fetching updated account: ${accountError?.message || 'Unknown error'}`);
   }
 
   // Update session
   session.account = updatedSenderAccount;
   localStorage.setItem('baadshah_bank_session', JSON.stringify(session));
 
-  return { account: updatedSenderAccount, transaction };
+  return { account: updatedSenderAccount, transaction: result };
 };
 
 // Get all transactions for current user
@@ -390,20 +329,7 @@ export const getUserTransactions = async () => {
 
   // Get all transactions where user is sender or receiver
   const { data: transactions, error } = await supabase
-    .from('transactions')
-    .select(`
-      id,
-      sender_id,
-      receiver_id,
-      amount,
-      description,
-      transaction_type,
-      created_at,
-      sender:sender_id(full_name, phone),
-      receiver:receiver_id(full_name, phone)
-    `)
-    .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
-    .order('created_at', { ascending: false });
+    .rpc('get_user_transactions', { user_id_param: user.id });
 
   if (error) {
     throw new Error(`Error fetching transactions: ${error.message}`);

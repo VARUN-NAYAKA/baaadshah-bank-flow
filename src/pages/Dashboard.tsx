@@ -15,6 +15,7 @@ import {
   getCurrentAccount,
   addMoney,
   withdrawMoney,
+  transferMoney,
   getUserTransactions
 } from "@/services/supabaseAuth";
 
