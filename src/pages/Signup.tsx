@@ -1,13 +1,12 @@
 
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
-import { supabase } from "@/integrations/supabase/client";
+import PersonalInfoForm from "@/components/signup/PersonalInfoForm";
+import SecurityInfoForm from "@/components/signup/SecurityInfoForm";
+import { createUser } from "@/services/localAuth";
 
 const Signup = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -25,10 +24,22 @@ const Signup = () => {
   const navigate = useNavigate();
 
   const updateFormData = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    const { name, value } = e.target;
+    
+    // Special handling for password fields to ensure they are exactly 4 digits
+    if ((name === 'password' || name === 'confirmPassword') && value.length <= 4) {
+      // Only allow digits
+      const onlyDigits = value.replace(/\D/g, '');
+      setFormData({
+        ...formData,
+        [name]: onlyDigits
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value
+      });
+    }
   };
 
   const validateStep1 = () => {
@@ -66,17 +77,17 @@ const Signup = () => {
     if (formData.password !== formData.confirmPassword) {
       toast({
         variant: "destructive",
-        title: "Password mismatch",
-        description: "Passwords don't match. Please try again."
+        title: "PIN mismatch",
+        description: "PINs don't match. Please try again."
       });
       return false;
     }
     
-    if (formData.password.length < 8) {
+    if (formData.password.length !== 4 || !/^\d{4}$/.test(formData.password)) {
       toast({
         variant: "destructive",
-        title: "Password too short",
-        description: "Password must be at least 8 characters long."
+        title: "Invalid PIN",
+        description: "PIN must be exactly 4 digits."
       });
       return false;
     }
@@ -102,41 +113,17 @@ const Signup = () => {
     setIsLoading(true);
     
     try {
-      const username = formData.username.trim();
-      
-      // Sign up the user using phone authentication instead of email
-      const { data, error } = await supabase.auth.signUp({
+      // Create account with our local auth service
+      const user = createUser({
+        fullName: formData.fullName,
+        username: formData.username,
         phone: formData.phone,
-        password: formData.password,
-        options: {
-          data: {
-            full_name: formData.fullName,
-            phone: formData.phone,
-            age: parseInt(formData.age),
-            address: formData.address,
-            username: username
-          }
-        }
+        age: parseInt(formData.age),
+        address: formData.address,
+        password: formData.password
       });
       
-      if (error) {
-        throw error;
-      }
-      
-      // Generate a random 15-digit account number
-      const accountNumber = Array.from({ length: 15 }, () => Math.floor(Math.random() * 10)).join('');
-      
-      // Create account in accounts table
-      const { error: accountError } = await supabase
-        .from('accounts')
-        .insert([
-          { user_id: data.user?.id, account_number: accountNumber, balance: 1000 }
-        ]);
-      
-      if (accountError) {
-        console.error("Error creating account:", accountError);
-        throw new Error("Failed to create bank account");
-      }
+      const accountNumber = user.id;
       
       toast({
         title: "Account Created Successfully!",
@@ -184,147 +171,18 @@ const Signup = () => {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               {currentStep === 1 ? (
-                // Step 1: Personal Information
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="space-y-4"
-                >
-                  <div className="space-y-2">
-                    <Label htmlFor="fullName">Full Name</Label>
-                    <Input
-                      id="fullName"
-                      name="fullName"
-                      placeholder="Enter your full name"
-                      value={formData.fullName}
-                      onChange={updateFormData}
-                      required
-                      className="input-field"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="username">Username</Label>
-                    <Input
-                      id="username"
-                      name="username"
-                      placeholder="Choose a username"
-                      value={formData.username}
-                      onChange={updateFormData}
-                      required
-                      className="input-field"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number</Label>
-                    <Input
-                      id="phone"
-                      name="phone"
-                      placeholder="Enter your phone number"
-                      value={formData.phone}
-                      onChange={updateFormData}
-                      required
-                      className="input-field"
-                    />
-                    <p className="text-xs text-gray-500">Enter with country code (e.g., +91XXXXXXXXXX)</p>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="age">Age</Label>
-                    <Input
-                      id="age"
-                      name="age"
-                      type="number"
-                      placeholder="Enter your age"
-                      value={formData.age}
-                      onChange={updateFormData}
-                      min="18"
-                      required
-                      className="input-field"
-                    />
-                    <p className="text-xs text-gray-500">You must be at least 18 years old.</p>
-                  </div>
-                  
-                  <Button
-                    type="button"
-                    onClick={handleNextStep}
-                    className="w-full bg-bank-primary hover:bg-bank-secondary text-white"
-                  >
-                    Next
-                  </Button>
-                </motion.div>
+                <PersonalInfoForm 
+                  formData={formData}
+                  updateFormData={updateFormData}
+                  handleNextStep={handleNextStep}
+                />
               ) : (
-                // Step 2: Security Information
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="space-y-4"
-                >
-                  <div className="space-y-2">
-                    <Label htmlFor="address">Address</Label>
-                    <Input
-                      id="address"
-                      name="address"
-                      placeholder="Enter your address"
-                      value={formData.address}
-                      onChange={updateFormData}
-                      required
-                      className="input-field"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="password">Password</Label>
-                    <Input
-                      id="password"
-                      name="password"
-                      type="password"
-                      placeholder="Create a password"
-                      value={formData.password}
-                      onChange={updateFormData}
-                      required
-                      className="input-field"
-                    />
-                    <p className="text-xs text-gray-500">Password must be at least 8 characters long.</p>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">Confirm Password</Label>
-                    <Input
-                      id="confirmPassword"
-                      name="confirmPassword"
-                      type="password"
-                      placeholder="Confirm your password"
-                      value={formData.confirmPassword}
-                      onChange={updateFormData}
-                      required
-                      className="input-field"
-                    />
-                  </div>
-                  
-                  <div className="flex space-x-3">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={handlePrevStep}
-                      className="flex-1"
-                    >
-                      Back
-                    </Button>
-                    <Button
-                      type="submit"
-                      className="flex-1 bg-bank-primary hover:bg-bank-secondary text-white"
-                      disabled={isLoading}
-                    >
-                      {isLoading ? "Creating Account..." : "Create Account"}
-                    </Button>
-                  </div>
-                </motion.div>
+                <SecurityInfoForm 
+                  formData={formData}
+                  updateFormData={updateFormData}
+                  handlePrevStep={handlePrevStep}
+                  isLoading={isLoading}
+                />
               )}
             </form>
           </CardContent>

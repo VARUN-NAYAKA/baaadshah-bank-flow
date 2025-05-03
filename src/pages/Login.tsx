@@ -7,14 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
-import { supabase } from "@/integrations/supabase/client";
+import { login } from "@/services/localAuth";
 
 const Login = () => {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [verificationCode, setVerificationCode] = useState("");
-  const [showVerification, setShowVerification] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -23,17 +21,15 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      // Log in with phone and password
-      const { data, error } = await supabase.auth.signInWithPassword({
+      // Login with our local auth service
+      const user = login({
         phone: phone,
         password: password,
       });
       
-      if (error) throw error;
-      
       toast({
         title: "Login successful",
-        description: "Welcome to Baadshah Bank!",
+        description: `Welcome back, ${user.fullName}!`,
       });
       
       // Navigate to dashboard
@@ -43,36 +39,6 @@ const Login = () => {
         variant: "destructive",
         title: "Login failed",
         description: error.message || "Please check your credentials and try again.",
-      });
-      setIsLoading(false);
-    }
-  };
-
-  const handleVerifyCode = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    
-    try {
-      // Verify the OTP code - Fix the method name from verifyOTP to verifyOtp
-      const { data, error } = await supabase.auth.verifyOtp({
-        phone: phone,
-        token: verificationCode,
-        type: 'sms'
-      });
-      
-      if (error) throw error;
-      
-      toast({
-        title: "Login successful",
-        description: "Welcome to Baadshah Bank!",
-      });
-      
-      navigate("/dashboard");
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Verification failed",
-        description: error.message || "Please enter a valid verification code.",
       });
     } finally {
       setIsLoading(false);
@@ -94,87 +60,53 @@ const Login = () => {
               <span className="text-bank-accent"> BANK</span>
             </CardTitle>
             <CardDescription className="text-lg">
-              {showVerification ? "Enter verification code" : "Login to your account"}
+              Login to your account
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {!showVerification ? (
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <Input
-                    id="phone"
-                    placeholder="Enter your phone number"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    required
-                    className="input-field"
-                  />
-                  <p className="text-xs text-gray-500">Enter with country code (e.g., +91XXXXXXXXXX)</p>
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone Number</Label>
+                <Input
+                  id="phone"
+                  placeholder="Enter your phone number"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  required
+                  className="input-field"
+                />
+                <p className="text-xs text-gray-500">Enter with country code (e.g., +91XXXXXXXXXX)</p>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">PIN</Label>
                 </div>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="password">Password</Label>
-                    <Link 
-                      to="/forgot-password"
-                      className="text-sm font-medium text-bank-secondary hover:text-bank-primary"
-                    >
-                      Forgot Password?
-                    </Link>
-                  </div>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="Enter your password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="input-field"
-                  />
-                </div>
-                <Button
-                  type="submit"
-                  className="w-full bg-bank-primary hover:bg-bank-secondary text-white"
-                  disabled={isLoading}
-                >
-                  {isLoading ? "Logging in..." : "Login"}
-                </Button>
-              </form>
-            ) : (
-              <form onSubmit={handleVerifyCode} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="verificationCode">Verification Code</Label>
-                  <Input
-                    id="verificationCode"
-                    placeholder="Enter 6-digit code"
-                    value={verificationCode}
-                    onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    required
-                    className="input-field text-center text-lg tracking-wider"
-                    inputMode="numeric"
-                    maxLength={6}
-                  />
-                  <p className="text-sm text-gray-500 text-center mt-2">
-                    A verification code has been sent to your registered phone number
-                  </p>
-                </div>
-                <Button
-                  type="submit"
-                  className="w-full bg-bank-primary hover:bg-bank-secondary text-white"
-                  disabled={isLoading}
-                >
-                  {isLoading ? "Verifying..." : "Verify Code"}
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => setShowVerification(false)}
-                  className="w-full"
-                >
-                  Back to Login
-                </Button>
-              </form>
-            )}
+                <Input
+                  id="password"
+                  type="password"
+                  inputMode="numeric"
+                  pattern="[0-9]{4}"
+                  maxLength={4}
+                  placeholder="Enter your 4-digit PIN"
+                  value={password}
+                  onChange={(e) => {
+                    const onlyDigits = e.target.value.replace(/\D/g, '');
+                    if (onlyDigits.length <= 4) {
+                      setPassword(onlyDigits);
+                    }
+                  }}
+                  required
+                  className="input-field"
+                />
+              </div>
+              <Button
+                type="submit"
+                className="w-full bg-bank-primary hover:bg-bank-secondary text-white"
+                disabled={isLoading}
+              >
+                {isLoading ? "Logging in..." : "Login"}
+              </Button>
+            </form>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
             <div className="text-center text-sm text-gray-500">
