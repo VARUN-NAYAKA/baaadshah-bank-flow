@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
-import { checkPhoneExists } from "@/services/supabaseAuth";
+import { checkPhoneExists } from "@/services";
 import { useToast } from "@/hooks/use-toast";
 
 interface PersonalInfoFormProps {

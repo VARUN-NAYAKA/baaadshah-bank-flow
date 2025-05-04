@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
@@ -20,7 +19,7 @@ import {
   transferMoney,
   User,
   Account
-} from "@/services/supabaseAuth";
+} from "@/services";
 
 const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(false);

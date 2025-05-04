@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import PersonalInfoForm from "@/components/signup/PersonalInfoForm";
 import SecurityInfoForm from "@/components/signup/SecurityInfoForm";
-import { registerUser } from "@/services/supabaseAuth";
+import { registerUser } from "@/services";
 
 const Signup = () => {
   const [currentStep, setCurrentStep] = useState(1);
