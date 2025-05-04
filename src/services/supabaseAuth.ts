@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { v4 as uuidv4 } from "uuid";
+import { Json } from "@/integrations/supabase/types";
 
 // Interface for user data
 export interface User {
@@ -113,8 +114,8 @@ export const registerUser = async (userData: {
     throw new Error(`Error fetching created user: ${fetchError?.message || 'User not found'}`);
   }
 
-  // Return user data
-  return createdUser as User;
+  // Return user data with proper type assertion
+  return createdUser as unknown as User;
 };
 
 // Login a user
@@ -229,7 +230,10 @@ export const addMoney = async (amount: number, description: string) => {
   session.account = updatedAccount as unknown as Account;
   localStorage.setItem('baadshah_bank_session', JSON.stringify(session));
 
-  return { account: updatedAccount as unknown as Account, transaction };
+  return { 
+    account: updatedAccount as unknown as Account, 
+    transaction 
+  };
 };
 
 // Withdraw money
@@ -277,7 +281,10 @@ export const withdrawMoney = async (amount: number, description: string) => {
   session.account = updatedAccount as unknown as Account;
   localStorage.setItem('baadshah_bank_session', JSON.stringify(session));
 
-  return { account: updatedAccount as unknown as Account, transaction };
+  return { 
+    account: updatedAccount as unknown as Account, 
+    transaction 
+  };
 };
 
 // Transfer money to another account
@@ -320,7 +327,10 @@ export const transferMoney = async (receiverPhone: string, amount: number, descr
   session.account = updatedSenderAccount as unknown as Account;
   localStorage.setItem('baadshah_bank_session', JSON.stringify(session));
 
-  return { account: updatedSenderAccount as unknown as Account, transaction: result };
+  return { 
+    account: updatedSenderAccount as unknown as Account, 
+    transaction: result 
+  };
 };
 
 // Get all transactions for current user
