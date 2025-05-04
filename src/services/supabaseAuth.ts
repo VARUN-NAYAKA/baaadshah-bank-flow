@@ -127,27 +127,32 @@ export const loginUser = async (phone: string, pin: string) => {
     throw new Error('Invalid phone number or PIN');
   }
 
+  // Type assertion to access properties safely
+  const userData = user as unknown as User;
+
   // Verify PIN
-  if ((user as User).pin !== pin) {
+  if (userData.pin !== pin) {
     throw new Error('Invalid phone number or PIN');
   }
 
   // Get user account
   const { data: account, error: accountError } = await supabase
-    .rpc('get_account_by_user_id', { user_id_param: (user as User).id });
+    .rpc('get_account_by_user_id', { user_id_param: userData.id });
 
   if (accountError || !account) {
     throw new Error('Account not found');
   }
 
+  const accountData = account as unknown as Account;
+
   // Store the current session
   localStorage.setItem('baadshah_bank_session', JSON.stringify({
-    user,
-    account,
+    user: userData,
+    account: accountData,
     expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
   }));
 
-  return { user: user as User, account: account as Account };
+  return { user: userData, account: accountData };
 };
 
 // Logout function
@@ -221,10 +226,10 @@ export const addMoney = async (amount: number, description: string) => {
   }
 
   // Update session
-  session.account = updatedAccount;
+  session.account = updatedAccount as unknown as Account;
   localStorage.setItem('baadshah_bank_session', JSON.stringify(session));
 
-  return { account: updatedAccount, transaction };
+  return { account: updatedAccount as unknown as Account, transaction };
 };
 
 // Withdraw money
@@ -269,10 +274,10 @@ export const withdrawMoney = async (amount: number, description: string) => {
   }
 
   // Update session
-  session.account = updatedAccount;
+  session.account = updatedAccount as unknown as Account;
   localStorage.setItem('baadshah_bank_session', JSON.stringify(session));
 
-  return { account: updatedAccount, transaction };
+  return { account: updatedAccount as unknown as Account, transaction };
 };
 
 // Transfer money to another account
@@ -312,10 +317,10 @@ export const transferMoney = async (receiverPhone: string, amount: number, descr
   }
 
   // Update session
-  session.account = updatedSenderAccount;
+  session.account = updatedSenderAccount as unknown as Account;
   localStorage.setItem('baadshah_bank_session', JSON.stringify(session));
 
-  return { account: updatedSenderAccount, transaction: result };
+  return { account: updatedSenderAccount as unknown as Account, transaction: result };
 };
 
 // Get all transactions for current user
