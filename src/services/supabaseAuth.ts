@@ -128,13 +128,13 @@ export const loginUser = async (phone: string, pin: string) => {
   }
 
   // Verify PIN
-  if (user.pin !== pin) {
+  if ((user as User).pin !== pin) {
     throw new Error('Invalid phone number or PIN');
   }
 
   // Get user account
   const { data: account, error: accountError } = await supabase
-    .rpc('get_account_by_user_id', { user_id_param: user.id });
+    .rpc('get_account_by_user_id', { user_id_param: (user as User).id });
 
   if (accountError || !account) {
     throw new Error('Account not found');
@@ -147,7 +147,7 @@ export const loginUser = async (phone: string, pin: string) => {
     expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
   }));
 
-  return { user, account };
+  return { user: user as User, account: account as Account };
 };
 
 // Logout function
