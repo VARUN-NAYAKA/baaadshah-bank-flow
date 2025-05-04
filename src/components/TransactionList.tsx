@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { format, parseISO } from "date-fns";
 import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getCurrentUser } from "@/services/supabaseAuth";
+import { getCurrentUser } from "@/services/authService";
 
 interface Transaction {
   id: string;
