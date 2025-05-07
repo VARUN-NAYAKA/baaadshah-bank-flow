@@ -2,7 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { v4 as uuidv4 } from "uuid";
 import { User, Account, UserSession } from "./types";
-import { checkPhoneExists, generateAccountNumber, getCurrentUserSession } from "./utils";
+import { checkPhoneExists, generateAccountNumber, getCurrentUserSession, saveUserSession } from "./utils";
 
 // Register a new user
 export const registerUser = async (userData: {
@@ -22,6 +22,12 @@ export const registerUser = async (userData: {
 
     // Create a unique ID for the user
     const userId = uuidv4();
+    
+    console.log("Starting user registration process with ID:", userId);
+    
+    // Generate account number first
+    const accountNumber = generateAccountNumber();
+    console.log("Generated account number:", accountNumber);
 
     // Insert user record using RPC function
     const { data: userData1, error: userError } = await supabase
@@ -42,76 +48,91 @@ export const registerUser = async (userData: {
       }
       throw new Error(`Error creating user: ${userError.message}`);
     }
+    
+    console.log("User created successfully:", userData1);
 
-    // Generate account number
-    const accountNumber = generateAccountNumber();
-
-    // Create account for the user using RPC function
+    // Create account directly using insert instead of RPC
     const { data: accountData, error: accountError } = await supabase
-      .rpc('create_account', {
-        account_user_id: userId,
-        account_number: accountNumber
-      });
+      .from('accounts')
+      .insert({
+        user_id: userId,
+        account_number: accountNumber,
+        balance: 0
+      })
+      .select();
 
     if (accountError) {
+      console.error("Account creation error:", accountError);
       // If account creation fails, attempt to clean up the user we just created
       await supabase.from('users').delete().eq('id', userId);
       throw new Error(`Error creating account: ${accountError.message}`);
     }
+    
+    console.log("Account created successfully:", accountData);
 
     // Get the created user
     const { data: createdUser, error: fetchError } = await supabase
-      .rpc('get_user_by_id', { user_id_param: userId });
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single();
 
     if (fetchError || !createdUser) {
       throw new Error(`Error fetching created user: ${fetchError?.message || 'User not found'}`);
     }
 
-    // Return user data with proper type assertion
-    return createdUser as unknown as User;
+    // Return user data
+    return createdUser as User;
   } catch (error: any) {
+    console.error("Registration error:", error);
     throw error;
   }
 };
 
 // Login a user
 export const loginUser = async (phone: string, pin: string) => {
-  // Find user with the provided phone
-  const { data: user, error: userError } = await supabase
-    .rpc('get_user_by_phone', { phone_param: phone });
+  try {
+    // Find user with the provided phone
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('phone', phone)
+      .single();
 
-  if (userError || !user) {
-    throw new Error('Invalid phone number or PIN');
+    if (userError || !user) {
+      throw new Error('Invalid phone number or PIN');
+    }
+
+    // Verify PIN
+    if (user.pin !== pin) {
+      throw new Error('Invalid phone number or PIN');
+    }
+
+    // Get user account
+    const { data: account, error: accountError } = await supabase
+      .from('accounts')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+    if (accountError || !account) {
+      throw new Error('Account not found');
+    }
+
+    // Store the current session
+    const session: UserSession = {
+      user: user as User,
+      account: account as Account,
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
+    };
+    
+    saveUserSession(session);
+
+    return { user: user as User, account: account as Account };
+  } catch (error: any) {
+    console.error("Login error:", error);
+    throw error;
   }
-
-  // Type assertion to access properties safely
-  const userData = user as unknown as User;
-
-  // Verify PIN
-  if (userData.pin !== pin) {
-    throw new Error('Invalid phone number or PIN');
-  }
-
-  // Get user account
-  const { data: account, error: accountError } = await supabase
-    .rpc('get_account_by_user_id', { user_id_param: userData.id });
-
-  if (accountError || !account) {
-    throw new Error('Account not found');
-  }
-
-  const accountData = account as unknown as Account;
-
-  // Store the current session
-  const session: UserSession = {
-    user: userData,
-    account: accountData,
-    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
-  };
-  
-  localStorage.setItem('baadshah_bank_session', JSON.stringify(session));
-
-  return { user: userData, account: accountData };
 };
 
 // Logout function

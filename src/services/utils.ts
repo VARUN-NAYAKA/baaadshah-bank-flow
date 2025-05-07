@@ -29,7 +29,14 @@ export const checkPhoneExists = async (phone: string) => {
 
 // Generate a random 15-digit account number
 export const generateAccountNumber = () => {
-  return Array.from({ length: 15 }, () => Math.floor(Math.random() * 10)).join('');
+  // Ensure the number starts with a non-zero digit
+  const firstDigit = Math.floor(Math.random() * 9) + 1; // 1-9
+  
+  // Generate the remaining 14 digits
+  const remainingDigits = Array.from({ length: 14 }, () => Math.floor(Math.random() * 10)).join('');
+  
+  // Combine for a 15-digit account number
+  return `${firstDigit}${remainingDigits}`;
 };
 
 // Get current user session
@@ -57,4 +64,19 @@ export const getCurrentUserSession = (): UserSession | null => {
 // Save the current session
 export const saveUserSession = (session: UserSession) => {
   localStorage.setItem('baadshah_bank_session', JSON.stringify(session));
+};
+
+// Get a unique username by adding a random suffix if needed
+export const generateUniqueUsername = (baseUsername: string) => {
+  const randomSuffix = Math.floor(Math.random() * 1000);
+  return `${baseUsername}${randomSuffix}`;
+};
+
+// Format currency (e.g., "₹ 10,000.00")
+export const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    minimumFractionDigits: 2
+  }).format(amount);
 };

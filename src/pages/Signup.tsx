@@ -84,6 +84,8 @@ const Signup = () => {
     setIsLoading(true);
     
     try {
+      console.log("Submitting registration form with data:", { ...formData, password: "****" });
+      
       // Register user in Supabase
       await registerUser({
         full_name: formData.fullName,
@@ -105,12 +107,20 @@ const Signup = () => {
       }, 2000);
       
     } catch (error: any) {
-      // Handle specific error for duplicate phone numbers
+      console.error("Registration error:", error);
+      
+      // Handle specific errors
       if (error.message.includes('phone') && error.message.includes('already')) {
         toast({
           variant: "destructive",
           title: "Phone number already registered",
           description: "This phone number is already associated with an account. Please login instead."
+        });
+      } else if (error.message.includes('violates row-level security')) {
+        toast({
+          variant: "destructive",
+          title: "Security policy error",
+          description: "There was an issue with account creation due to security policies. Please try again later or contact support."
         });
       } else {
         toast({

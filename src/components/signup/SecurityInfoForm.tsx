@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
+import { Loader2 } from "lucide-react";
 
 interface SecurityInfoFormProps {
   formData: {
@@ -17,6 +18,10 @@ interface SecurityInfoFormProps {
 }
 
 const SecurityInfoForm = ({ formData, updateFormData, handlePrevStep, isLoading }: SecurityInfoFormProps) => {
+  const isPinValid = formData.password.length === 4 && /^\d{4}$/.test(formData.password);
+  const isPinMatch = formData.password === formData.confirmPassword;
+  const isAddressValid = formData.address.trim().length > 0;
+  
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -35,7 +40,11 @@ const SecurityInfoForm = ({ formData, updateFormData, handlePrevStep, isLoading 
           onChange={updateFormData}
           required
           className="input-field"
+          disabled={isLoading}
         />
+        {!isAddressValid && formData.address.length > 0 && (
+          <p className="text-xs text-red-500">Address cannot be empty.</p>
+        )}
       </div>
       
       <div className="space-y-2">
@@ -52,8 +61,14 @@ const SecurityInfoForm = ({ formData, updateFormData, handlePrevStep, isLoading 
           onChange={updateFormData}
           required
           className="input-field"
+          disabled={isLoading}
         />
-        <p className="text-xs text-gray-500">PIN must be exactly 4 digits.</p>
+        {!isPinValid && formData.password.length > 0 && (
+          <p className="text-xs text-red-500">PIN must be exactly 4 digits.</p>
+        )}
+        {isPinValid && (
+          <p className="text-xs text-green-600">PIN is valid.</p>
+        )}
       </div>
       
       <div className="space-y-2">
@@ -70,7 +85,14 @@ const SecurityInfoForm = ({ formData, updateFormData, handlePrevStep, isLoading 
           onChange={updateFormData}
           required
           className="input-field"
+          disabled={isLoading}
         />
+        {formData.confirmPassword.length > 0 && !isPinMatch && (
+          <p className="text-xs text-red-500">PINs don't match.</p>
+        )}
+        {formData.confirmPassword.length > 0 && isPinMatch && (
+          <p className="text-xs text-green-600">PINs match.</p>
+        )}
       </div>
       
       <div className="flex space-x-3">
@@ -79,15 +101,21 @@ const SecurityInfoForm = ({ formData, updateFormData, handlePrevStep, isLoading 
           variant="outline"
           onClick={handlePrevStep}
           className="flex-1"
+          disabled={isLoading}
         >
           Back
         </Button>
         <Button
           type="submit"
           className="flex-1 bg-bank-primary hover:bg-bank-secondary text-white"
-          disabled={isLoading}
+          disabled={isLoading || !isPinValid || !isPinMatch || !isAddressValid}
         >
-          {isLoading ? "Creating Account..." : "Create Account"}
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Creating Account...
+            </>
+          ) : "Create Account"}
         </Button>
       </div>
     </motion.div>
