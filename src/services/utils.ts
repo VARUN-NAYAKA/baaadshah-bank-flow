@@ -36,7 +36,9 @@ export const generateAccountNumber = () => {
   const remainingDigits = Array.from({ length: 14 }, () => Math.floor(Math.random() * 10)).join('');
   
   // Combine for a 15-digit account number
-  return `${firstDigit}${remainingDigits}`;
+  const accountNumber = `${firstDigit}${remainingDigits}`;
+  console.log("Generated account number in utils:", accountNumber);
+  return accountNumber;
 };
 
 // Get current user session

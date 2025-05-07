@@ -7,6 +7,8 @@ import { motion } from "framer-motion";
 import PersonalInfoForm from "@/components/signup/PersonalInfoForm";
 import SecurityInfoForm from "@/components/signup/SecurityInfoForm";
 import { registerUser } from "@/services";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 const Signup = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -20,11 +22,15 @@ const Signup = () => {
     username: ""
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
   const updateFormData = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+    
+    // Clear any previous errors when user makes changes
+    setError(null);
     
     // Special handling for password fields to ensure they are exactly 4 digits
     if ((name === 'password' || name === 'confirmPassword') && value.length <= 4) {
@@ -48,10 +54,15 @@ const Signup = () => {
 
   const handlePrevStep = () => {
     setCurrentStep(1);
+    // Clear any errors when going back
+    setError(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Clear any previous errors
+    setError(null);
     
     // Validate PINs match and are 4 digits
     if (!formData.password || !formData.confirmPassword || !formData.address) {
@@ -109,6 +120,9 @@ const Signup = () => {
     } catch (error: any) {
       console.error("Registration error:", error);
       
+      // Set the error message for display
+      setError(error.message || "An unexpected error occurred");
+      
       // Handle specific errors
       if (error.message.includes('phone') && error.message.includes('already')) {
         toast({
@@ -157,6 +171,15 @@ const Signup = () => {
             </div>
           </CardHeader>
           <CardContent>
+            {error && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>
+                  {error}
+                </AlertDescription>
+              </Alert>
+            )}
             <form onSubmit={handleSubmit} className="space-y-4">
               {currentStep === 1 ? (
                 <PersonalInfoForm 

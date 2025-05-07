@@ -29,17 +29,20 @@ export const registerUser = async (userData: {
     const accountNumber = generateAccountNumber();
     console.log("Generated account number:", accountNumber);
 
-    // Insert user record using RPC function
-    const { data: userData1, error: userError } = await supabase
-      .rpc('create_user', {
-        user_id: userId,
-        user_phone: userData.phone,
-        user_username: userData.username,
-        user_full_name: userData.full_name,
-        user_age: userData.age,
-        user_address: userData.address,
-        user_pin: userData.pin
-      });
+    // Create user record first
+    const { data: createdUser, error: userError } = await supabase
+      .from('users')
+      .insert({
+        id: userId,
+        phone: userData.phone,
+        username: userData.username,
+        full_name: userData.full_name,
+        age: userData.age,
+        address: userData.address,
+        pin: userData.pin
+      })
+      .select()
+      .single();
 
     if (userError) {
       // Check if the error is a duplicate phone number error
@@ -49,9 +52,9 @@ export const registerUser = async (userData: {
       throw new Error(`Error creating user: ${userError.message}`);
     }
     
-    console.log("User created successfully:", userData1);
+    console.log("User created successfully:", createdUser);
 
-    // Create account directly using insert instead of RPC
+    // Create account directly using insert
     const { data: accountData, error: accountError } = await supabase
       .from('accounts')
       .insert({
@@ -69,17 +72,6 @@ export const registerUser = async (userData: {
     }
     
     console.log("Account created successfully:", accountData);
-
-    // Get the created user
-    const { data: createdUser, error: fetchError } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', userId)
-      .single();
-
-    if (fetchError || !createdUser) {
-      throw new Error(`Error fetching created user: ${fetchError?.message || 'User not found'}`);
-    }
 
     // Return user data
     return createdUser as User;
