@@ -105,7 +105,7 @@ export type Database = {
           age: number
           created_at?: string
           full_name: string
-          id: string
+          id?: string
           phone: string
           pin: string
           username: string
