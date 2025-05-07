@@ -42,6 +42,17 @@ const PersonalInfoForm = ({ formData, updateFormData, handleNextStep }: Personal
       return;
     }
     
+    // Validate phone number format
+    const phoneRegex = /^\+?[0-9]{10,15}$/; // Basic phone validation
+    if (!phoneRegex.test(formData.phone)) {
+      toast({
+        variant: "destructive",
+        title: "Invalid phone number",
+        description: "Please enter a valid phone number with country code."
+      });
+      return;
+    }
+    
     // Check if phone number already exists
     setIsChecking(true);
     try {
@@ -50,7 +61,7 @@ const PersonalInfoForm = ({ formData, updateFormData, handleNextStep }: Personal
         toast({
           variant: "destructive",
           title: "Phone number already registered",
-          description: "This phone number is already associated with an account."
+          description: "This phone number is already associated with an account. Please login instead."
         });
         setIsChecking(false);
         return;

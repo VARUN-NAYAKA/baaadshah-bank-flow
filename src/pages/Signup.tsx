@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -41,46 +42,8 @@ const Signup = () => {
     }
   };
 
-  const validateStep1 = () => {
-    // Validation handled in PersonalInfoForm component
-    return true;
-  };
-
-  const validateStep2 = () => {
-    if (!formData.password || !formData.confirmPassword || !formData.address) {
-      toast({
-        variant: "destructive",
-        title: "Missing information",
-        description: "Please fill in all required fields."
-      });
-      return false;
-    }
-    
-    if (formData.password !== formData.confirmPassword) {
-      toast({
-        variant: "destructive",
-        title: "PIN mismatch",
-        description: "PINs don't match. Please try again."
-      });
-      return false;
-    }
-    
-    if (formData.password.length !== 4 || !/^\d{4}$/.test(formData.password)) {
-      toast({
-        variant: "destructive",
-        title: "Invalid PIN",
-        description: "PIN must be exactly 4 digits."
-      });
-      return false;
-    }
-    
-    return true;
-  };
-
   const handleNextStep = () => {
-    if (validateStep1()) {
-      setCurrentStep(2);
-    }
+    setCurrentStep(2);
   };
 
   const handlePrevStep = () => {
@@ -90,7 +53,33 @@ const Signup = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateStep2()) return;
+    // Validate PINs match and are 4 digits
+    if (!formData.password || !formData.confirmPassword || !formData.address) {
+      toast({
+        variant: "destructive",
+        title: "Missing information",
+        description: "Please fill in all required fields."
+      });
+      return;
+    }
+    
+    if (formData.password !== formData.confirmPassword) {
+      toast({
+        variant: "destructive",
+        title: "PIN mismatch",
+        description: "PINs don't match. Please try again."
+      });
+      return;
+    }
+    
+    if (formData.password.length !== 4 || !/^\d{4}$/.test(formData.password)) {
+      toast({
+        variant: "destructive",
+        title: "Invalid PIN",
+        description: "PIN must be exactly 4 digits."
+      });
+      return;
+    }
     
     setIsLoading(true);
     
@@ -113,14 +102,23 @@ const Signup = () => {
       // Navigate to login after a brief delay
       setTimeout(() => {
         navigate("/login");
-      }, 3000);
+      }, 2000);
       
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Error creating account",
-        description: error.message || "An unexpected error occurred"
-      });
+      // Handle specific error for duplicate phone numbers
+      if (error.message.includes('phone') && error.message.includes('already')) {
+        toast({
+          variant: "destructive",
+          title: "Phone number already registered",
+          description: "This phone number is already associated with an account. Please login instead."
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error creating account",
+          description: error.message || "An unexpected error occurred"
+        });
+      }
     } finally {
       setIsLoading(false);
     }

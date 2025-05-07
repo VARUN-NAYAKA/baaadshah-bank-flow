@@ -13,55 +13,65 @@ export const registerUser = async (userData: {
   address: string;
   pin: string;
 }) => {
-  // Check if phone number already exists
-  const phoneExists = await checkPhoneExists(userData.phone);
-  if (phoneExists) {
-    throw new Error('A user with this phone number already exists');
+  try {
+    // Check if phone number already exists
+    const phoneExists = await checkPhoneExists(userData.phone);
+    if (phoneExists) {
+      throw new Error('A user with this phone number already exists');
+    }
+
+    // Create a unique ID for the user
+    const userId = uuidv4();
+
+    // Insert user record using RPC function
+    const { data: userData1, error: userError } = await supabase
+      .rpc('create_user', {
+        user_id: userId,
+        user_phone: userData.phone,
+        user_username: userData.username,
+        user_full_name: userData.full_name,
+        user_age: userData.age,
+        user_address: userData.address,
+        user_pin: userData.pin
+      });
+
+    if (userError) {
+      // Check if the error is a duplicate phone number error
+      if (userError.message.includes('users_phone_key')) {
+        throw new Error('This phone number is already registered. Please use a different phone number or try logging in.');
+      }
+      throw new Error(`Error creating user: ${userError.message}`);
+    }
+
+    // Generate account number
+    const accountNumber = generateAccountNumber();
+
+    // Create account for the user using RPC function
+    const { data: accountData, error: accountError } = await supabase
+      .rpc('create_account', {
+        account_user_id: userId,
+        account_number: accountNumber
+      });
+
+    if (accountError) {
+      // If account creation fails, attempt to clean up the user we just created
+      await supabase.from('users').delete().eq('id', userId);
+      throw new Error(`Error creating account: ${accountError.message}`);
+    }
+
+    // Get the created user
+    const { data: createdUser, error: fetchError } = await supabase
+      .rpc('get_user_by_id', { user_id_param: userId });
+
+    if (fetchError || !createdUser) {
+      throw new Error(`Error fetching created user: ${fetchError?.message || 'User not found'}`);
+    }
+
+    // Return user data with proper type assertion
+    return createdUser as unknown as User;
+  } catch (error: any) {
+    throw error;
   }
-
-  // Create a unique ID for the user
-  const userId = uuidv4();
-
-  // Insert user record using raw SQL via RPC function to avoid type issues
-  const { data: userData1, error: userError } = await supabase
-    .rpc('create_user', {
-      user_id: userId,
-      user_phone: userData.phone,
-      user_username: userData.username,
-      user_full_name: userData.full_name,
-      user_age: userData.age,
-      user_address: userData.address,
-      user_pin: userData.pin
-    });
-
-  if (userError) {
-    throw new Error(`Error creating user: ${userError.message}`);
-  }
-
-  // Generate account number
-  const accountNumber = generateAccountNumber();
-
-  // Create account for the user using RPC function
-  const { data: accountData, error: accountError } = await supabase
-    .rpc('create_account', {
-      account_user_id: userId,
-      account_number: accountNumber
-    });
-
-  if (accountError) {
-    throw new Error(`Error creating account: ${accountError.message}`);
-  }
-
-  // Get the created user
-  const { data: createdUser, error: fetchError } = await supabase
-    .rpc('get_user_by_id', { user_id_param: userId });
-
-  if (fetchError || !createdUser) {
-    throw new Error(`Error fetching created user: ${fetchError?.message || 'User not found'}`);
-  }
-
-  // Return user data with proper type assertion
-  return createdUser as unknown as User;
 };
 
 // Login a user
