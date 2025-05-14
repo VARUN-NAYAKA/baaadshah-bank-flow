@@ -8,7 +8,7 @@ import { Account } from "@/services";
 
 interface WithdrawMoneyFormProps {
   account: Account;
-  onWithdrawMoney: (amount: number, description: string) => Promise<void>;
+  onWithdrawMoney: (amount: number, description: string) => Promise<boolean>;
 }
 
 const WithdrawMoneyForm = ({ account, onWithdrawMoney }: WithdrawMoneyFormProps) => {
@@ -48,8 +48,11 @@ const WithdrawMoneyForm = ({ account, onWithdrawMoney }: WithdrawMoneyFormProps)
     setIsLoading(true);
     
     try {
-      await onWithdrawMoney(parsedAmount, description);
-      // Form is reset by parent component on success
+      const success = await onWithdrawMoney(parsedAmount, description);
+      if (success) {
+        setAmount("");
+        setDescription("");
+      }
     } catch (error) {
       console.error("Withdraw money form error:", error);
     } finally {

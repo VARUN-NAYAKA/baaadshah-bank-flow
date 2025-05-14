@@ -20,8 +20,6 @@ function App() {
         <Route path="/profile/settings" element={<ProfileSettings />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
-      
-      {/* Using Toaster component for viewing purposes, but it won't display notifications */}
       <Toaster />
     </Router>
   );

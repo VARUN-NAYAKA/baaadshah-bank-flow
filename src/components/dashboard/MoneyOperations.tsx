@@ -9,8 +9,8 @@ import { Account } from "@/services";
 
 interface MoneyOperationsProps {
   account: Account;
-  onAddMoney: (amount: number, description: string) => Promise<void>;
-  onWithdrawMoney: (amount: number, description: string) => Promise<void>;
+  onAddMoney: (amount: number, description: string) => Promise<boolean>;
+  onWithdrawMoney: (amount: number, description: string) => Promise<boolean>;
   onTransferMoney: (recipientPhone: string, amount: number, description: string) => Promise<boolean>;
 }
 

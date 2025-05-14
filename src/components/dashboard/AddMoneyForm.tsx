@@ -6,7 +6,7 @@ import { ArrowDown } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 
 interface AddMoneyFormProps {
-  onAddMoney: (amount: number, description: string) => Promise<void>;
+  onAddMoney: (amount: number, description: string) => Promise<boolean>;
 }
 
 const AddMoneyForm = ({ onAddMoney }: AddMoneyFormProps) => {
@@ -37,8 +37,11 @@ const AddMoneyForm = ({ onAddMoney }: AddMoneyFormProps) => {
     setIsLoading(true);
     
     try {
-      await onAddMoney(parsedAmount, description);
-      // Form is reset by parent component on success
+      const success = await onAddMoney(parsedAmount, description);
+      if (success) {
+        setAmount("");
+        setDescription("");
+      }
     } catch (error) {
       console.error("Add money form error:", error);
     } finally {

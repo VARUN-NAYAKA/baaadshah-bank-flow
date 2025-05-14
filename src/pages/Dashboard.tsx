@@ -111,8 +111,8 @@ const Dashboard = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, account]);
   
-  // Handle adding money
-  const handleAddMoney = async (amount: number, description: string) => {
+  // Handle adding money - fixed return type to match the component props
+  const handleAddMoney = async (amount: number, description: string): Promise<boolean> => {
     setIsLoading(true);
     setError(null);
     
@@ -143,8 +143,8 @@ const Dashboard = () => {
     }
   };
   
-  // Handle withdrawing money
-  const handleWithdrawMoney = async (amount: number, description: string) => {
+  // Handle withdrawing money - fixed return type to match the component props
+  const handleWithdrawMoney = async (amount: number, description: string): Promise<boolean> => {
     setIsLoading(true);
     setError(null);
     
