@@ -5,16 +5,19 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DashboardNav from "@/components/DashboardNav";
 import { motion } from "framer-motion";
-import { ArrowDown, ArrowUp, RotateCw, RefreshCw, AlertCircle, CheckCircle } from "lucide-react";
+import { ArrowDown, ArrowUp, RotateCw, RefreshCw, AlertCircle, CheckCircle, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import TransferMoney from "@/components/TransferMoney";
 import TransactionList from "@/components/TransactionList";
+import TransactionHistory from "@/components/TransactionHistory";
+import { toast } from "@/components/ui/use-toast";
 import { 
   getCurrentUser,
   getCurrentAccount,
   getUserTransactions,
+  getAccountTransactionHistory,
   addMoneyToAccount,
   withdrawMoneyFromAccount,
   transferMoney,
@@ -32,9 +35,12 @@ const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
   const [account, setAccount] = useState<Account | null>(null);
   const [transactions, setTransactions] = useState<any[] | null>(null);
+  const [transactionHistory, setTransactionHistory] = useState<any[] | null>(null);
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("transactions");
   const navigate = useNavigate();
   
   // Refresh data when refresh button is clicked or after operations
@@ -58,11 +64,41 @@ const Dashboard = () => {
       const userTransactions = await getUserTransactions();
       setTransactions(userTransactions || []);
       console.log("Transactions set:", userTransactions);
+      
+      // Get transaction history if active tab is history
+      if (activeTab === "history" && currentAccount) {
+        await fetchTransactionHistory(currentAccount.id);
+      }
     } catch (error: any) {
       console.error("Error loading data:", error);
       setError(error.message || "Failed to load account data");
+      toast({
+        title: "Error",
+        description: error.message || "Failed to load account data",
+        variant: "destructive"
+      });
     } finally {
       setIsLoadingTransactions(false);
+    }
+  };
+  
+  // Fetch transaction history for an account
+  const fetchTransactionHistory = async (accountId: string) => {
+    setIsLoadingHistory(true);
+    try {
+      const history = await getAccountTransactionHistory(accountId);
+      setTransactionHistory(history || []);
+      console.log("Transaction history set:", history);
+    } catch (error: any) {
+      console.error("Error loading transaction history:", error);
+      setError(error.message || "Failed to load transaction history");
+      toast({
+        title: "Error",
+        description: error.message || "Failed to load transaction history",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoadingHistory(false);
     }
   };
   
@@ -71,6 +107,14 @@ const Dashboard = () => {
     refreshData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshTrigger]);
+  
+  // Load transaction history when tab changes
+  useEffect(() => {
+    if (activeTab === "history" && account) {
+      fetchTransactionHistory(account.id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, account]);
   
   // Handle adding money
   const handleAddMoney = async () => {
@@ -92,6 +136,11 @@ const Dashboard = () => {
       await addMoneyToAccount(amount, addDescription);
       
       setSuccess(`₹${amount.toFixed(2)} has been added to your account`);
+      toast({
+        title: "Success",
+        description: `₹${amount.toFixed(2)} has been added to your account`,
+        variant: "default"
+      });
       
       // Clear form
       setAddAmount("");
@@ -102,6 +151,11 @@ const Dashboard = () => {
     } catch (error: any) {
       console.error("Add money error:", error);
       setError(error.message || "Failed to add money to your account");
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add money to your account",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
@@ -132,6 +186,11 @@ const Dashboard = () => {
       await withdrawMoneyFromAccount(amount, withdrawDescription);
       
       setSuccess(`₹${amount.toFixed(2)} has been withdrawn from your account`);
+      toast({
+        title: "Success",
+        description: `₹${amount.toFixed(2)} has been withdrawn from your account`,
+        variant: "default"
+      });
       
       // Clear form
       setWithdrawAmount("");
@@ -142,6 +201,11 @@ const Dashboard = () => {
     } catch (error: any) {
       console.error("Withdrawal error:", error);
       setError(error.message || "Failed to withdraw money from your account");
+      toast({
+        title: "Error",
+        description: error.message || "Failed to withdraw money from your account",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
@@ -158,6 +222,11 @@ const Dashboard = () => {
       await transferMoney(recipientPhone, amount, description);
       
       setSuccess(`₹${amount.toFixed(2)} has been transferred successfully`);
+      toast({
+        title: "Success",
+        description: `₹${amount.toFixed(2)} has been transferred successfully`,
+        variant: "default"
+      });
       
       // Refresh data
       setRefreshTrigger(prev => prev + 1);
@@ -166,6 +235,11 @@ const Dashboard = () => {
     } catch (error: any) {
       console.error("Transfer error:", error);
       setError(error.message || "Failed to transfer money");
+      toast({
+        title: "Error",
+        description: error.message || "Failed to transfer money",
+        variant: "destructive"
+      });
       return false;
     }
   };
@@ -221,23 +295,35 @@ const Dashboard = () => {
           
           {/* Transaction Actions */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Last Transactions */}
+            {/* Transactions & History Tabs */}
             <Card className="shadow-md lg:col-span-2 overflow-hidden">
               <CardContent className="p-0">
                 <div className="p-6 pb-3 flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">Recent Transactions</h3>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => setRefreshTrigger(prev => prev + 1)}
-                    disabled={isLoadingTransactions}
-                  >
-                    <RefreshCw className="h-4 w-4 mr-1" />
-                    Refresh
-                  </Button>
-                </div>
-                <div className="px-6 pb-6">
-                  <TransactionList transactions={transactions} isLoading={isLoadingTransactions} />
+                  <Tabs defaultValue="transactions" className="w-full" onValueChange={setActiveTab}>
+                    <TabsList>
+                      <TabsTrigger value="transactions">Recent Transactions</TabsTrigger>
+                      <TabsTrigger value="history">Transaction History</TabsTrigger>
+                    </TabsList>
+                    <div className="mt-2 flex justify-end">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => setRefreshTrigger(prev => prev + 1)}
+                        disabled={isLoadingTransactions || isLoadingHistory}
+                      >
+                        <RefreshCw className="h-4 w-4 mr-1" />
+                        Refresh
+                      </Button>
+                    </div>
+                    
+                    <TabsContent value="transactions" className="pt-2">
+                      <TransactionList transactions={transactions} isLoading={isLoadingTransactions} />
+                    </TabsContent>
+                    
+                    <TabsContent value="history" className="pt-2">
+                      <TransactionHistory history={transactionHistory} isLoading={isLoadingHistory} />
+                    </TabsContent>
+                  </Tabs>
                 </div>
               </CardContent>
             </Card>

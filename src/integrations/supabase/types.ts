@@ -44,6 +44,60 @@ export type Database = {
           },
         ]
       }
+      transaction_history: {
+        Row: {
+          account_id: string
+          amount: number
+          balance_after: number
+          balance_before: number
+          created_at: string
+          description: string | null
+          id: string
+          status: string
+          transaction_id: string
+          transaction_type: string
+        }
+        Insert: {
+          account_id: string
+          amount: number
+          balance_after: number
+          balance_before: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          status?: string
+          transaction_id: string
+          transaction_type: string
+        }
+        Update: {
+          account_id?: string
+          amount?: number
+          balance_after?: number
+          balance_before?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          status?: string
+          transaction_id?: string
+          transaction_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transaction_history_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transaction_history_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           amount: number
@@ -160,6 +214,10 @@ export type Database = {
       get_account_by_user_id: {
         Args: { user_id_param: string }
         Returns: Json
+      }
+      get_account_transaction_history: {
+        Args: { account_id_param: string }
+        Returns: Json[]
       }
       get_user_by_id: {
         Args: { user_id_param: string }

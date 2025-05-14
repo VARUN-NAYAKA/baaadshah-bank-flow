@@ -72,6 +72,26 @@ export const getUserTransactions = async () => {
   return transactions;
 };
 
+// Get detailed transaction history for an account
+export const getAccountTransactionHistory = async (accountId: string) => {
+  const session = getCurrentUserSession();
+  if (!session) {
+    throw new Error('User not logged in');
+  }
+
+  // Get transaction history for the account
+  const { data: history, error } = await supabase
+    .rpc('get_account_transaction_history', { account_id_param: accountId });
+
+  if (error) {
+    console.error("Transaction history fetch error:", error);
+    throw new Error(`Error fetching transaction history: ${error.message}`);
+  }
+
+  console.log("Fetched transaction history:", history); // Debug log
+  return history;
+};
+
 // Add money to account (deposit)
 export const addMoney = async (amount: number, description: string = "") => {
   const session = getCurrentUserSession();
