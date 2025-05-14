@@ -28,6 +28,7 @@ interface TransactionListProps {
 
 const TransactionList = ({ transactions, isLoading = false }: TransactionListProps) => {
   const currentUser = getCurrentUser();
+  console.log("Current transactions data:", transactions); // Debug log
   
   const getTransactionDetails = (transaction: Transaction) => {
     if (!currentUser) return { displayName: "", transactionType: "credit" };
@@ -83,19 +84,12 @@ const TransactionList = ({ transactions, isLoading = false }: TransactionListPro
             {transactions.map((transaction, index) => {
               const { displayName, transactionType } = getTransactionDetails(transaction);
               return (
-                <motion.tr
-                  key={transaction.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.05 }}
-                  className="border-b"
-                  style={{ display: 'table-row' }}  // This fixes the motion.tr animation issue
-                >
+                <TableRow key={transaction.id}>
                   <TableCell className="font-medium">
                     {format(parseISO(transaction.date), "MMM dd, yyyy")}
                   </TableCell>
                   <TableCell>
-                    {transaction.description}
+                    {transaction.description || "No description"}
                     {transaction.type === 'transfer' && (
                       <span className="text-xs text-gray-500 block">
                         {transactionType === 'credit' ? 'From: ' : 'To: '}{displayName}
@@ -105,7 +99,7 @@ const TransactionList = ({ transactions, isLoading = false }: TransactionListPro
                   <TableCell className={`text-right ${transactionType === 'credit' ? 'text-green-600' : 'text-red-600'}`}>
                     {transactionType === 'credit' ? '+' : '-'}₹{transaction.amount.toFixed(2)}
                   </TableCell>
-                </motion.tr>
+                </TableRow>
               );
             })}
           </TableBody>

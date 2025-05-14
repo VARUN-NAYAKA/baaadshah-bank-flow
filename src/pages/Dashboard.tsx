@@ -32,12 +32,14 @@ const Dashboard = () => {
   const [account, setAccount] = useState<Account | null>(null);
   const [transactions, setTransactions] = useState<any[] | null>(null);
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
-  const { toast } = useToast();
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const navigate = useNavigate();
   
   // Refresh data when refresh button is clicked or after operations
   const refreshData = async () => {
     setIsLoadingTransactions(true);
+    setError(null);
     try {
       // Check if user is logged in
       const currentUser = getCurrentUser();
@@ -54,12 +56,10 @@ const Dashboard = () => {
       // Get transactions
       const userTransactions = await getUserTransactions();
       setTransactions(userTransactions || []);
+      console.log("Transactions set:", userTransactions);
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Error loading data",
-        description: error.message || "Failed to load account data"
-      });
+      console.error("Error loading data:", error);
+      setError(error.message || "Failed to load account data");
     } finally {
       setIsLoadingTransactions(false);
     }
@@ -73,34 +73,24 @@ const Dashboard = () => {
   
   // Handle adding money
   const handleAddMoney = async () => {
-    if (!addAmount || !addDescription) {
-      toast({
-        variant: "destructive",
-        title: "Missing information",
-        description: "Please enter an amount and description."
-      });
+    if (!addAmount) {
+      setError("Please enter an amount");
       return;
     }
     
     const amount = parseFloat(addAmount);
     if (isNaN(amount) || amount <= 0) {
-      toast({
-        variant: "destructive",
-        title: "Invalid amount",
-        description: "Please enter a valid amount greater than 0."
-      });
+      setError("Please enter a valid amount greater than 0");
       return;
     }
     
     setIsLoading(true);
+    setError(null);
     
     try {
       await addMoney(amount, addDescription);
       
-      toast({
-        title: "Deposit successful",
-        description: `₹${amount.toFixed(2)} has been added to your account.`
-      });
+      setSuccess(`₹${amount.toFixed(2)} has been added to your account`);
       
       // Clear form
       setAddAmount("");
@@ -109,11 +99,8 @@ const Dashboard = () => {
       // Refresh data
       setRefreshTrigger(prev => prev + 1);
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Transaction failed",
-        description: error.message || "Failed to add money to your account."
-      });
+      console.error("Add money error:", error);
+      setError(error.message || "Failed to add money to your account");
     } finally {
       setIsLoading(false);
     }
@@ -121,43 +108,29 @@ const Dashboard = () => {
   
   // Handle withdrawing money
   const handleWithdrawMoney = async () => {
-    if (!withdrawAmount || !withdrawDescription) {
-      toast({
-        variant: "destructive",
-        title: "Missing information",
-        description: "Please enter an amount and description."
-      });
+    if (!withdrawAmount) {
+      setError("Please enter an amount");
       return;
     }
     
     const amount = parseFloat(withdrawAmount);
     if (isNaN(amount) || amount <= 0) {
-      toast({
-        variant: "destructive",
-        title: "Invalid amount",
-        description: "Please enter a valid amount greater than 0."
-      });
+      setError("Please enter a valid amount greater than 0");
       return;
     }
     
     if (account && amount > account.balance) {
-      toast({
-        variant: "destructive",
-        title: "Insufficient balance",
-        description: "You don't have enough balance for this withdrawal."
-      });
+      setError("Insufficient balance for this withdrawal");
       return;
     }
     
     setIsLoading(true);
+    setError(null);
     
     try {
       await withdrawMoney(amount, withdrawDescription);
       
-      toast({
-        title: "Withdrawal successful",
-        description: `₹${amount.toFixed(2)} has been withdrawn from your account.`
-      });
+      setSuccess(`₹${amount.toFixed(2)} has been withdrawn from your account`);
       
       // Clear form
       setWithdrawAmount("");
@@ -166,45 +139,32 @@ const Dashboard = () => {
       // Refresh data
       setRefreshTrigger(prev => prev + 1);
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Transaction failed",
-        description: error.message || "Failed to withdraw money from your account."
-      });
+      console.error("Withdrawal error:", error);
+      setError(error.message || "Failed to withdraw money from your account");
     } finally {
       setIsLoading(false);
     }
   };
   
   // Handle transferring money
-  const handleTransferMoney = async (recipientPhone: string, amount: number, description: string) => {
+  const handleTransferMoney = async (recipientPhone: string, amount: number, description: string = "") => {
     if (user && recipientPhone === user.phone) {
-      toast({
-        variant: "destructive",
-        title: "Invalid recipient",
-        description: "You cannot transfer money to your own account."
-      });
+      setError("You cannot transfer money to your own account");
       return false;
     }
     
     try {
       await transferMoney(recipientPhone, amount, description);
       
-      toast({
-        title: "Transfer successful",
-        description: `₹${amount.toFixed(2)} has been transferred successfully.`
-      });
+      setSuccess(`₹${amount.toFixed(2)} has been transferred successfully`);
       
       // Refresh data
       setRefreshTrigger(prev => prev + 1);
       
       return true;
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Transfer failed",
-        description: error.message || "Failed to transfer money."
-      });
+      console.error("Transfer error:", error);
+      setError(error.message || "Failed to transfer money");
       return false;
     }
   };
@@ -240,6 +200,23 @@ const Dashboard = () => {
               </div>
             </CardContent>
           </Card>
+          
+          {/* Error and Success Messages */}
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          
+          {success && (
+            <Alert variant="default" className="bg-green-50 text-green-800 border-green-200">
+              <CheckCircle className="h-4 w-4 text-green-500" />
+              <AlertTitle>Success</AlertTitle>
+              <AlertDescription>{success}</AlertDescription>
+            </Alert>
+          )}
           
           {/* Transaction Actions */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -282,7 +259,7 @@ const Dashboard = () => {
                     </h3>
                     <div className="space-y-3">
                       <div>
-                        <label className="text-sm font-medium block mb-1">Amount (₹)</label>
+                        <label className="text-sm font-medium block mb-1">Amount (₹) *</label>
                         <Input 
                           type="number" 
                           placeholder="Enter amount" 
@@ -291,7 +268,7 @@ const Dashboard = () => {
                         />
                       </div>
                       <div>
-                        <label className="text-sm font-medium block mb-1">Description</label>
+                        <label className="text-sm font-medium block mb-1">Description (Optional)</label>
                         <Input 
                           placeholder="What is this for?" 
                           value={addDescription} 
@@ -316,7 +293,7 @@ const Dashboard = () => {
                     </h3>
                     <div className="space-y-3">
                       <div>
-                        <label className="text-sm font-medium block mb-1">Amount (₹)</label>
+                        <label className="text-sm font-medium block mb-1">Amount (₹) *</label>
                         <Input 
                           type="number" 
                           placeholder="Enter amount" 
@@ -325,7 +302,7 @@ const Dashboard = () => {
                         />
                       </div>
                       <div>
-                        <label className="text-sm font-medium block mb-1">Description</label>
+                        <label className="text-sm font-medium block mb-1">Description (Optional)</label>
                         <Input 
                           placeholder="What is this for?" 
                           value={withdrawDescription} 

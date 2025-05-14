@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface TransferMoneyProps {
@@ -18,7 +19,7 @@ const TransferMoney = ({ onTransfer }: TransferMoneyProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState(1);
   const [otp, setOtp] = useState("");
-  const { toast } = useToast();
+  const [error, setError] = useState<string | null>(null);
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -30,44 +31,28 @@ const TransferMoney = ({ onTransfer }: TransferMoneyProps) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     
-    if (!recipientPhone || !amount || !description) {
-      toast({
-        variant: "destructive",
-        title: "Missing information",
-        description: "Please fill in all required fields."
-      });
+    if (!recipientPhone || !amount) {
+      setError("Please enter recipient phone number and amount");
       return;
     }
     
     if (parseFloat(amount) <= 0) {
-      toast({
-        variant: "destructive",
-        title: "Invalid amount",
-        description: "Please enter a valid amount greater than 0."
-      });
+      setError("Please enter a valid amount greater than 0");
       return;
     }
     
     // Proceed to verification step
     setStep(2);
-    
-    // Simulate OTP sent to user's device
-    toast({
-      title: "Verification code sent",
-      description: "A verification code has been sent to your registered mobile number."
-    });
   };
 
   const handleVerifyAndTransfer = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     
     if (otp.length !== 6) {
-      toast({
-        variant: "destructive",
-        title: "Invalid verification code",
-        description: "Please enter a valid 6-digit verification code."
-      });
+      setError("Please enter a valid 6-digit verification code");
       return;
     }
     
@@ -85,8 +70,8 @@ const TransferMoney = ({ onTransfer }: TransferMoneyProps) => {
         setOtp("");
         setStep(1);
       }
-    } catch (error) {
-      // Error is handled by the parent component
+    } catch (error: any) {
+      setError(error.message || "Transfer failed");
     } finally {
       setIsLoading(false);
     }
@@ -98,10 +83,18 @@ const TransferMoney = ({ onTransfer }: TransferMoneyProps) => {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      
       {step === 1 ? (
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="recipientPhone">Recipient Phone Number</Label>
+            <Label htmlFor="recipientPhone">Recipient Phone Number *</Label>
             <Input
               id="recipientPhone"
               placeholder="Enter recipient's phone number"
@@ -114,7 +107,7 @@ const TransferMoney = ({ onTransfer }: TransferMoneyProps) => {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="amount">Amount (₹)</Label>
+            <Label htmlFor="amount">Amount (₹) *</Label>
             <Input
               id="amount"
               placeholder="Enter amount"
@@ -126,14 +119,13 @@ const TransferMoney = ({ onTransfer }: TransferMoneyProps) => {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">Description (Optional)</Label>
             <Input
               id="description"
               placeholder="What is this transfer for?"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="input-field"
-              required
             />
           </div>
           
@@ -154,10 +146,12 @@ const TransferMoney = ({ onTransfer }: TransferMoneyProps) => {
                 <span className="text-gray-500">Amount:</span>
                 <span className="font-medium">₹{parseFloat(amount).toFixed(2)}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Description:</span>
-                <span className="font-medium">{description}</span>
-              </div>
+              {description && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Description:</span>
+                  <span className="font-medium">{description}</span>
+                </div>
+              )}
             </div>
           </Card>
           
