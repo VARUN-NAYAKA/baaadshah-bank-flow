@@ -1,17 +1,16 @@
 
-// Re-export all services and types
+// Re-export services and types with proper organization to avoid conflicts
 
 // Types
 export * from './types';
 
-// Authentication service
+// Authentication service - contains getCurrentUser and getCurrentAccount
 export * from './authService';
 
-// Account service
-// Explicitly re-export to avoid ambiguity
+// Account service - avoid conflicting with transactionService
 export { 
-  addMoney,
-  withdrawMoney 
+  addMoney as addMoneyToAccount,
+  withdrawMoney as withdrawMoneyFromAccount 
 } from './accountService';
 
 // Transaction service
@@ -22,5 +21,3 @@ export * from './profileService';
 
 // Utils
 export * from './utils';
-
-// No need to re-export these since they're already exported from authService

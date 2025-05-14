@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,8 +15,8 @@ import {
   getCurrentUser,
   getCurrentAccount,
   getUserTransactions,
-  addMoney,
-  withdrawMoney,
+  addMoneyToAccount,
+  withdrawMoneyFromAccount,
   transferMoney,
   User,
   Account
@@ -88,7 +89,7 @@ const Dashboard = () => {
     setError(null);
     
     try {
-      await addMoney(amount, addDescription);
+      await addMoneyToAccount(amount, addDescription);
       
       setSuccess(`₹${amount.toFixed(2)} has been added to your account`);
       
@@ -128,7 +129,7 @@ const Dashboard = () => {
     setError(null);
     
     try {
-      await withdrawMoney(amount, withdrawDescription);
+      await withdrawMoneyFromAccount(amount, withdrawDescription);
       
       setSuccess(`₹${amount.toFixed(2)} has been withdrawn from your account`);
       
