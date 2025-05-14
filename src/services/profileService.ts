@@ -1,125 +1,78 @@
 
-import { supabase } from "@/integrations/supabase/client";
+import { getCurrentUser, setCurrentUser } from "./localAuth";
 import { User } from "./types";
-import { getCurrentUserSession, saveUserSession } from "./utils";
 
 // Update user profile information
-export const updateUserProfile = async (userData: {
-  id: string;
-  full_name: string;
-  username: string;
-  age: number;
-  address: string;
-}) => {
+export const updateUserProfile = async (userData: Partial<User>): Promise<User> => {
   try {
-    // Update the user in the database
-    const { data, error } = await supabase
-      .from('users')
-      .update({
-        full_name: userData.full_name,
-        username: userData.username,
-        age: userData.age,
-        address: userData.address
-      })
-      .eq('id', userData.id)
-      .select()
-      .single();
-
-    if (error) {
-      throw new Error(`Error updating profile: ${error.message}`);
+    const currentUser = getCurrentUser();
+    
+    if (!currentUser) {
+      throw new Error("User not logged in");
     }
-
-    // Update the current user session
-    const session = getCurrentUserSession();
-    if (session) {
-      session.user = {
-        ...session.user,
-        full_name: userData.full_name,
-        username: userData.username,
-        age: userData.age,
-        address: userData.address
-      };
-      saveUserSession(session);
-    }
-
-    return data as User;
+    
+    // Update the user in local storage
+    const updatedUser = {
+      ...currentUser,
+      ...userData
+    };
+    
+    // In a real app, this would call an API to update the user in the database
+    setCurrentUser(updatedUser);
+    
+    return updatedUser;
   } catch (error: any) {
     console.error("Error updating profile:", error);
-    throw error;
+    throw new Error(error.message || "Failed to update profile");
   }
 };
 
 // Update user PIN
-export const updateUserPin = async (userId: string, newPin: string) => {
+export const updateUserPin = async (userId: string, newPin: string): Promise<User> => {
   try {
-    // Update the PIN in the database
-    const { data, error } = await supabase
-      .from('users')
-      .update({ pin: newPin })
-      .eq('id', userId)
-      .select()
-      .single();
-
-    if (error) {
-      throw new Error(`Error updating PIN: ${error.message}`);
+    const currentUser = getCurrentUser();
+    
+    if (!currentUser) {
+      throw new Error("User not logged in");
     }
-
-    // Update the current user session
-    const session = getCurrentUserSession();
-    if (session) {
-      session.user = {
-        ...session.user,
-        pin: newPin
-      };
-      saveUserSession(session);
-    }
-
-    return data as User;
+    
+    // Update the PIN in local storage
+    const updatedUser = {
+      ...currentUser,
+      pin: newPin
+    };
+    
+    // In a real app, this would call an API to update the user's PIN in the database
+    setCurrentUser(updatedUser);
+    
+    return updatedUser;
   } catch (error: any) {
     console.error("Error updating PIN:", error);
-    throw error;
+    throw new Error(error.message || "Failed to update PIN");
   }
 };
 
 // Update user phone number
-export const updateUserPhone = async (userId: string, newPhone: string) => {
+export const updateUserPhone = async (userId: string, newPhone: string): Promise<User> => {
   try {
-    // Check if phone number already exists
-    const { data: existingUser, error: checkError } = await supabase
-      .from('users')
-      .select('id')
-      .eq('phone', newPhone)
-      .single();
-
-    if (existingUser) {
-      throw new Error("This phone number is already registered to another account");
+    const currentUser = getCurrentUser();
+    
+    if (!currentUser) {
+      throw new Error("User not logged in");
     }
-
-    // Update the phone number in the database
-    const { data, error } = await supabase
-      .from('users')
-      .update({ phone: newPhone })
-      .eq('id', userId)
-      .select()
-      .single();
-
-    if (error) {
-      throw new Error(`Error updating phone number: ${error.message}`);
-    }
-
-    // Update the current user session
-    const session = getCurrentUserSession();
-    if (session) {
-      session.user = {
-        ...session.user,
-        phone: newPhone
-      };
-      saveUserSession(session);
-    }
-
-    return data as User;
+    
+    // Update the phone number in local storage
+    const updatedUser = {
+      ...currentUser,
+      phone: newPhone
+    };
+    
+    // In a real app, this would call an API to update the user's phone in the database
+    setCurrentUser(updatedUser);
+    
+    return updatedUser;
   } catch (error: any) {
     console.error("Error updating phone number:", error);
-    throw error;
+    throw new Error(error.message || "Failed to update phone number");
   }
 };

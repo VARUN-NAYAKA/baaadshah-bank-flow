@@ -1,13 +1,14 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DashboardNav from "@/components/DashboardNav";
 import { motion } from "framer-motion";
-import { ArrowDown, ArrowUp, RotateCw, RefreshCw } from "lucide-react";
+import { ArrowDown, ArrowUp, RotateCw, RefreshCw, AlertCircle, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import TransferMoney from "@/components/TransferMoney";
 import TransactionList from "@/components/TransactionList";
 import { 

@@ -13,5 +13,8 @@ export * from './accountService';
 // Transaction service
 export * from './transactionService';
 
+// Profile service
+export * from './profileService';
+
 // Utils
 export * from './utils';
