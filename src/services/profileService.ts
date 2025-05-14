@@ -1,6 +1,7 @@
 
-import { getCurrentUser, setCurrentUser } from "./localAuth";
+import { getCurrentUser } from "./localAuth";
 import { User } from "./types";
+import { supabase } from "@/integrations/supabase/client";
 
 // Update user profile information
 export const updateUserProfile = async (userData: Partial<User>): Promise<User> => {
@@ -11,14 +12,25 @@ export const updateUserProfile = async (userData: Partial<User>): Promise<User> 
       throw new Error("User not logged in");
     }
     
-    // Update the user in local storage
-    const updatedUser = {
+    // In a real app with supabase, this would call an API to update the user
+    // For now we'll use localStorage to simulate the update
+    const updatedUser: User = {
       ...currentUser,
-      ...userData
+      id: currentUser.id,
+      full_name: userData.full_name || currentUser.full_name,
+      username: userData.username || currentUser.username,
+      phone: userData.phone || currentUser.phone,
+      age: userData.age || currentUser.age,
+      address: userData.address || currentUser.address,
+      pin: currentUser.pin,
+      created_at: currentUser.created_at
     };
     
-    // In a real app, this would call an API to update the user in the database
-    setCurrentUser(updatedUser);
+    // Store the updated user in localStorage
+    localStorage.setItem('baadshah_bank_session', JSON.stringify({
+      user: updatedUser,
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+    }));
     
     return updatedUser;
   } catch (error: any) {
@@ -36,14 +48,17 @@ export const updateUserPin = async (userId: string, newPin: string): Promise<Use
       throw new Error("User not logged in");
     }
     
-    // Update the PIN in local storage
-    const updatedUser = {
+    // Update the PIN
+    const updatedUser: User = {
       ...currentUser,
       pin: newPin
     };
     
-    // In a real app, this would call an API to update the user's PIN in the database
-    setCurrentUser(updatedUser);
+    // Store the updated user in localStorage
+    localStorage.setItem('baadshah_bank_session', JSON.stringify({
+      user: updatedUser,
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+    }));
     
     return updatedUser;
   } catch (error: any) {
@@ -61,14 +76,17 @@ export const updateUserPhone = async (userId: string, newPhone: string): Promise
       throw new Error("User not logged in");
     }
     
-    // Update the phone number in local storage
-    const updatedUser = {
+    // Update the phone number
+    const updatedUser: User = {
       ...currentUser,
       phone: newPhone
     };
     
-    // In a real app, this would call an API to update the user's phone in the database
-    setCurrentUser(updatedUser);
+    // Store the updated user in localStorage
+    localStorage.setItem('baadshah_bank_session', JSON.stringify({
+      user: updatedUser,
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+    }));
     
     return updatedUser;
   } catch (error: any) {
