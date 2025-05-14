@@ -17,13 +17,13 @@ export const updateUserProfile = async (userData: Partial<User>): Promise<User> 
     const updatedUser: User = {
       ...currentUser,
       id: currentUser.id,
-      full_name: userData.full_name || currentUser.full_name,
+      fullName: userData.fullName || currentUser.fullName,
       username: userData.username || currentUser.username,
       phone: userData.phone || currentUser.phone,
       age: userData.age || currentUser.age,
       address: userData.address || currentUser.address,
       pin: currentUser.pin,
-      created_at: currentUser.created_at
+      createdAt: currentUser.createdAt
     };
     
     // Store the updated user in localStorage

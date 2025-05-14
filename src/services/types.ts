@@ -6,11 +6,11 @@ export interface User {
   id: string;
   phone: string;
   username: string;
-  full_name: string;
+  fullName: string;
   age: number;
   address: string;
   pin: string;
-  created_at: string;
+  createdAt: string;
 }
 
 // Interface for account data
