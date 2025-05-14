@@ -52,7 +52,7 @@ const ProfileSettings = () => {
     // Initialize form data with user info
     setFormData(prev => ({
       ...prev,
-      fullName: currentUser.full_name || "",
+      fullName: currentUser.fullName || "",
       address: currentUser.address || "",
       username: currentUser.username || "",
       age: currentUser.age?.toString() || "",
@@ -85,7 +85,7 @@ const ProfileSettings = () => {
       
       await updateUserProfile({
         id: user.id,
-        full_name: formData.fullName,
+        fullName: formData.fullName,
         address: formData.address,
         username: formData.username,
         age: parseInt(formData.age) || user.age
@@ -96,7 +96,7 @@ const ProfileSettings = () => {
       // Update local user data
       const updatedUser = {
         ...user,
-        full_name: formData.fullName,
+        fullName: formData.fullName,
         address: formData.address,
         username: formData.username,
         age: parseInt(formData.age) || user.age
@@ -223,7 +223,7 @@ const ProfileSettings = () => {
   
   return (
     <div className="min-h-screen bg-gray-50">
-      <DashboardNav name={user.full_name} accountNumber={account?.account_number} />
+      <DashboardNav name={user.fullName} accountNumber={account?.account_number} />
       
       <div className="container py-8">
         <motion.div

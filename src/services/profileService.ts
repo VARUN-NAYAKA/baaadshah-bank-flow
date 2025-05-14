@@ -1,7 +1,7 @@
 
-import { getCurrentUser } from "./utils";
-import { User } from "./types";
 import { supabase } from "@/integrations/supabase/client";
+import { User } from "./types";
+import { getCurrentUser } from "./authService";  // Changed from "./utils" to "./authService"
 import { getCurrentUserSession, saveUserSession } from "./utils";
 
 // Update user profile information
