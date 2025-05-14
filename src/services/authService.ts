@@ -73,8 +73,20 @@ export const registerUser = async (userData: {
     
     console.log("Account created successfully:", accountData);
 
+    // Transform the user data to match our User type
+    const transformedUser: User = {
+      id: createdUser.id,
+      phone: createdUser.phone,
+      username: createdUser.username,
+      fullName: createdUser.full_name,
+      age: createdUser.age,
+      address: createdUser.address,
+      pin: createdUser.pin,
+      createdAt: createdUser.created_at
+    };
+
     // Return user data
-    return createdUser as User;
+    return transformedUser;
   } catch (error: any) {
     console.error("Registration error:", error);
     throw error;
@@ -100,6 +112,18 @@ export const loginUser = async (phone: string, pin: string) => {
       throw new Error('Invalid phone number or PIN');
     }
 
+    // Transform the user data to match our User type
+    const transformedUser: User = {
+      id: user.id,
+      phone: user.phone,
+      username: user.username,
+      fullName: user.full_name,
+      age: user.age,
+      address: user.address,
+      pin: user.pin,
+      createdAt: user.created_at
+    };
+
     // Get user account
     const { data: account, error: accountError } = await supabase
       .from('accounts')
@@ -113,14 +137,14 @@ export const loginUser = async (phone: string, pin: string) => {
 
     // Store the current session
     const session: UserSession = {
-      user: user as User,
+      user: transformedUser,
       account: account as Account,
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
     };
     
     saveUserSession(session);
 
-    return { user: user as User, account: account as Account };
+    return { user: transformedUser, account: account as Account };
   } catch (error: any) {
     console.error("Login error:", error);
     throw error;

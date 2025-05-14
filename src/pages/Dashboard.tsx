@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
@@ -177,7 +176,7 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <DashboardNav name={user.full_name} accountNumber={account.account_number} />
+      <DashboardNav name={user.fullName} accountNumber={account.account_number} />
       
       <div className="container py-8">
         <motion.div
@@ -191,7 +190,7 @@ const Dashboard = () => {
             <CardContent className="p-6">
               <div className="flex flex-col md:flex-row md:items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-800">Welcome, {user.full_name}</h2>
+                  <h2 className="text-2xl font-bold text-gray-800">Welcome, {user.fullName}</h2>
                   <p className="text-gray-500">Account: {account.account_number}</p>
                 </div>
                 <div className="mt-4 md:mt-0">

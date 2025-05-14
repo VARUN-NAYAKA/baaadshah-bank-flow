@@ -8,11 +8,10 @@ export * from './types';
 export * from './authService';
 
 // Account service
+// Only export functions that actually exist in accountService.ts
 export { 
-  getCurrentAccount,
-  getAccountByUserId,
-  createAccount,
-  checkAccountBalance,
+  addMoney,
+  withdrawMoney 
 } from './accountService';
 
 // Transaction service
@@ -24,8 +23,8 @@ export * from './profileService';
 // Utils
 export * from './utils';
 
-// Explicitly re-export the addMoney and withdrawMoney functions to resolve ambiguity
-export { 
-  addMoney,
-  withdrawMoney 
-} from './accountService';
+// Re-export getCurrentAccount and getCurrentUser from authService to maintain API compatibility
+export {
+  getCurrentAccount,
+  getCurrentUser
+} from './authService';

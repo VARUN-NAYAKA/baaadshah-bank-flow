@@ -1,7 +1,8 @@
 
-import { getCurrentUser } from "./localAuth";
+import { getCurrentUser } from "./utils";
 import { User } from "./types";
 import { supabase } from "@/integrations/supabase/client";
+import { getCurrentUserSession, saveUserSession } from "./utils";
 
 // Update user profile information
 export const updateUserProfile = async (userData: Partial<User>): Promise<User> => {
@@ -26,11 +27,17 @@ export const updateUserProfile = async (userData: Partial<User>): Promise<User> 
       createdAt: currentUser.createdAt
     };
     
-    // Store the updated user in localStorage
-    localStorage.setItem('baadshah_bank_session', JSON.stringify({
-      user: updatedUser,
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
-    }));
+    // Get the current session
+    const session = getCurrentUserSession();
+    if (!session) {
+      throw new Error("User session not found");
+    }
+    
+    // Update the user in the session
+    session.user = updatedUser;
+    
+    // Store the updated session
+    saveUserSession(session);
     
     return updatedUser;
   } catch (error: any) {
@@ -54,11 +61,17 @@ export const updateUserPin = async (userId: string, newPin: string): Promise<Use
       pin: newPin
     };
     
-    // Store the updated user in localStorage
-    localStorage.setItem('baadshah_bank_session', JSON.stringify({
-      user: updatedUser,
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
-    }));
+    // Get the current session
+    const session = getCurrentUserSession();
+    if (!session) {
+      throw new Error("User session not found");
+    }
+    
+    // Update the user in the session
+    session.user = updatedUser;
+    
+    // Store the updated session
+    saveUserSession(session);
     
     return updatedUser;
   } catch (error: any) {
@@ -82,11 +95,17 @@ export const updateUserPhone = async (userId: string, newPhone: string): Promise
       phone: newPhone
     };
     
-    // Store the updated user in localStorage
-    localStorage.setItem('baadshah_bank_session', JSON.stringify({
-      user: updatedUser,
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
-    }));
+    // Get the current session
+    const session = getCurrentUserSession();
+    if (!session) {
+      throw new Error("User session not found");
+    }
+    
+    // Update the user in the session
+    session.user = updatedUser;
+    
+    // Store the updated session
+    saveUserSession(session);
     
     return updatedUser;
   } catch (error: any) {
